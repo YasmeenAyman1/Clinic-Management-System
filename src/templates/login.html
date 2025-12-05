@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Login Page{% endblock %}
+{% block content %}
+<h1 class="text-center">Login</h1>
+<form method="POST" action="{{ url_for('auth.login') }}"><!--authO_controller.py-->
+    <div class="form-group">
+        <label for="username">Username:</label>
+        <input type="text" class="form-control" id="username" name="username" required>
+    </div>
+    <div class="form-group">
+        <label for="password">Password:</label>
+        <input type="password" class="form-control" id="password" name="password" required>
+    </div>
+    <button type="submit" class="btn btn-primary">Login</button>
+</form>
+
+<hr>
+
+<div>
+    <p>Don't have an account? <a href="{{ url_for('auth.signup') }}">Sign up here</a></p><!--authO_controller.py-->
+</div>
+{% endblock %}

@@ -1,0 +1,36 @@
+{% extends "base.html" %}   
+{% block title %}Sign Up{% endblock %}
+{% block content %}
+<h1 class="text-center">Sign Up</h1>
+<form method="POST" action="{{ url_for('auth.signup') }}"><!--authO_controller.py-->
+
+    <div class="form-group">
+        <label for="firstName">First Name:</label>
+        <input type="text" class="form-control" id="firstName" placeholder="Enter your first name" name="firstName">
+    </div>
+    <div class="form-group">
+        <label for="lastName">Last Name:</label>
+        <input type="text" class="form-control" id="lastName" placeholder="Enter your last name" name="lastName">
+    </div>
+        <div class="form-group">
+        <label for="email">Email address:</label>
+        <input type="email" class="form-control" id="email" placeholder="Enter email" name="email">
+    </div>
+    <div class="form-group">
+        <label for="pwd">Password:</label>
+        <input type="password" class="form-control" id="pwd" placeholder="Enter password" name="pswd">
+    </div>
+    <div class="form-group">
+        <label for="pwd2">Password: (Confirm)</label>
+        <input type="password" class="form-control" id="pwd2" placeholder="Confirm password" name="pswd2">
+    </div>
+    <button type="submit" class="btn btn-primary">Sign Up</button>
+
+</form>
+
+<hr>
+
+<div>
+    <p>Already have an account? <a href="{{ url_for('auth.login') }}">Login here</a></p><!--authO_controller.py-->
+</div>  
+{% endblock %}
