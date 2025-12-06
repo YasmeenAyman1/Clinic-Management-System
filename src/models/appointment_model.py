@@ -1,20 +1,11 @@
 class Appointment:
-    def __init__(self,id, patient_name, doctor_name, date, time):
+    def __init__(self,id, appointment_time,status, date,follow_up_date,assistant_id,doctor_id,patient_id,created_at):
         self.id = id
-        self.patient_name = patient_name
-        self.doctor_name = doctor_name
+        self.appointment_time=appointment_time
+        self.status = status
         self.date = date
-        self.time = time
-
-    @staticmethod
-    def selectTime():
-        ...
-    @staticmethod
-    def changeTime():
-        ...
-    @staticmethod
-    def cancelAppointment():
-        ...
-    @staticmethod
-    def bookAppointment():
-        ...
+        self.follow_up_date = follow_up_date
+        self.assistant_id=assistant_id
+        self.patient_id=patient_id
+        self.doctor_id=doctor_id
+        self.created_at=created_at
