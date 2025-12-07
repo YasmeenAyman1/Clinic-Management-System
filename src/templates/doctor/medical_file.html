@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Patient Medical File - {{ patient.name if patient else 'Unknown' }}</h2>
+
+{% if patient %}
+    <div class="card">
+        <p><strong>Name:</strong> {{ patient.name }}</p>
+        <p><strong>Email:</strong> {{ patient.email }}</p>
+        <p><strong>Phone:</strong> {{ patient.phone }}</p>
+    </div>
+
+    <h3 style="margin-top:14px;">Add Diagnosis</h3>
+    <form method="post" action="{{ url_for('doctor.diagnose', pid=patient.id) }}" enctype="multipart/form-data">
+        <label class="label">Diagnosis</label>
+        <textarea class="input-box" name="diagnosis" required></textarea>
+
+        <label class="label">Treatment</label>
+        <textarea class="input-box" name="treatment" required></textarea>
+
+        <label class="label">Follow-up Date</label>
+        <input class="input-box" type="date" name="followup">
+
+        <label class="label">Attach File</label>
+        <input class="input-box" type="file" name="file">
+
+        <button class="button" type="submit">Save</button>
+    </form>
+
+    <hr>
+    <h3>Previous Diagnoses</h3>
+    {% if diagnosis %}
+        {% for d in diagnosis %}
+            <div class="card">
+                <p class="small">{{ d.date }} — {{ d.doctor_name }}</p>
+                <p><strong>Diagnosis:</strong> {{ d.text }}</p>
+                <p><strong>Treatment:</strong> {{ d.treatment }}</p>
+                <div class="actions" style="margin-top:8px;">
+                    <form method="post" action="{{ url_for('doctor.delete_diagnosis', did=d.id) }}" style="display:inline;">
+                        <button class="button secondary" type="submit" onclick="return confirm('Delete this record?');">Delete</button>
+                    </form>
+                    <a class="button" href="{{ url_for('doctor.edit_diagnosis', did=d.id) }}">Edit</a>
+                </div>
+            </div>
+        {% endfor %}
+    {% else %}
+        <p class="small">No previous diagnoses.</p>
+    {% endif %}
+{% else %}
+    <p class="small">Patient not found.</p>
+{% endif %}
+{% endblock %}

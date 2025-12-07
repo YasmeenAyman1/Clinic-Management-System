@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Search Patient</h2>
+
+<form method="post" action="{{ url_for('assistant.search') }}">
+    <input class="input-box" name="query" placeholder="Enter name or ID">
+    <button class="button" type="submit">Search</button>
+</form>
+
+{% if results %}
+    <h3>Results</h3>
+    {% for r in results %}
+        <div class="card">
+            <p><strong>{{ r.name }}</strong> — {{ r.phone }}</p>
+            <a class="button" href="{{ url_for('assistant.patient_file', pid=r.id) }}">Open File</a>
+        </div>
+    {% endfor %}
+{% endif %}
+{% endblock %}
