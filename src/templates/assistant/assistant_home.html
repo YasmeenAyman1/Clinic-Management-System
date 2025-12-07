@@ -1,5 +1,153 @@
-{% extends 'base.html' %}
+{% extends "base.html" %}
+
+{% block title %}Assistant Dashboard - Clinic Management System{% endblock %}
+
 {% block content %}
-<h1>#Assistant page</h1>
-<p> this is assistant page </p>
+<div class="dashboard-header">
+    <h1>Welcome, {{ assistant_name }}!</h1>
+    <p>Clinic management and appointment scheduling</p>
+    <div class="date-display">
+        <i class="fas fa-calendar-day"></i>
+        {{ today }}
+    </div>
+</div>
+
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-icon total">
+            <i class="fas fa-calendar"></i>
+        </div>
+        <div class="stat-info">
+            <h3>{{ total_appointments }}</h3>
+            <p>Total Appointments</p>
+        </div>
+    </div>
+    
+    <div class="stat-card">
+        <div class="stat-icon booked">
+            <i class="fas fa-user-check"></i>
+        </div>
+        <div class="stat-info">
+            <h3>{{ booked_appointments }}</h3>
+            <p>Booked Appointments</p>
+        </div>
+    </div>
+    
+    <div class="stat-card">
+        <div class="stat-icon completed">
+            <i class="fas fa-check-circle"></i>
+        </div>
+        <div class="stat-info">
+            <h3>{{ completed_appointments }}</h3>
+            <p>Completed Today</p>
+        </div>
+    </div>
+</div>
+
+<div class="dashboard-section">
+    <div class="section-header">
+        <h2><i class="fas fa-list"></i> Today's Appointment List</h2>
+        <button class="btn btn-primary" onclick="showAddAppointmentModal()">
+            <i class="fas fa-plus"></i> Add Appointment
+        </button>
+    </div>
+    
+    {% if today_appointments %}
+    <div class="appointments-list">
+        {% for appt in today_appointments %}
+        <div class="appointment-card">
+            <div class="appointment-time">
+                <strong>{{ appt[1] }}</strong>
+            </div>
+            <div class="appointment-details">
+                <h4>Dr. {{ appt[2] }}</h4>
+                {% if appt[3] %}
+                    <p><i class="fas fa-user"></i> {{ appt[3] }}</p>
+                    <p><i class="fas fa-phone"></i> {{ appt[4] }}</p>
+                {% else %}
+                    <p class="text-muted">Available for booking</p>
+                {% endif %}
+            </div>
+            <div class="appointment-actions">
+                <span class="status-badge status-{{ appt[5] }}">
+                    {{ appt[5] }}
+                </span>
+                {% if appt[5] == 'available' %}
+                <form method="POST" action="{{ url_for('remove_appointment') }}" 
+                      onsubmit="return confirm('Remove this appointment slot?')">
+                    <input type="hidden" name="appointment_id" value="{{ appt[0] }}">
+                    <button type="submit" class="btn btn-sm btn-danger">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <i class="fas fa-calendar-times"></i>
+        <h3>No Appointments Scheduled</h3>
+        <p>Add appointments using the button above.</p>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Add Appointment Modal -->
+<div id="addAppointmentModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Add New Appointment</h3>
+            <button class="close-btn" onclick="closeModal()">&times;</button>
+        </div>
+        <form method="POST" action="{{ url_for('add_appointment') }}" class="modal-form">
+            <div class="form-group">
+                <label for="doctor_id">Doctor</label>
+                <select id="doctor_id" name="doctor_id" required>
+                    <option value="">Select Doctor</option>
+                    <option value="1">Dr. Smith (Cardiology)</option>
+                    <option value="2">Dr. Johnson (Pediatrics)</option>
+                    <option value="3">Dr. Williams (Dermatology)</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="appointment_date">Date</label>
+                <input type="date" id="appointment_date" name="appointment_date" required 
+                       min="{{ today }}">
+            </div>
+            <div class="form-group">
+                <label for="appointment_time">Time</label>
+                <input type="time" id="appointment_time" name="appointment_time" required 
+                       min="08:00" max="20:00">
+            </div>
+            <div class="form-buttons">
+                <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+                <button type="submit" class="btn btn-primary">Add Appointment</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 {% endblock %}
+
+{% block scripts %}
+<script>
+function showAddAppointmentModal() {
+    document.getElementById('addAppointmentModal').style.display = 'block';
+}
+
+function closeModal() {
+    document.getElementById('addAppointmentModal').style.display = 'none';
+}
+
+// Close modal when clicking outside
+window.onclick = function(event) {
+    const modal = document.getElementById('addAppointmentModal');
+    if (event.target == modal) {
+        modal.style.display = 'none';
+    }
+}
+</script>
+{% endblock %}
+       

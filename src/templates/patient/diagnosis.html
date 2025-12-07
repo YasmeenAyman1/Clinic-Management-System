@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Medical Records</h2>
+
+{% if diagnosis %}
+    {% for d in diagnosis %}
+        <div class="card">
+            <p class="small">Visit: {{ d.date }} — Doctor: {{ d.doctor_name }}</p>
+            <p><strong>Diagnosis:</strong> {{ d.text }}</p>
+            <p><strong>Treatment:</strong> {{ d.treatment }}</p>
+            {% if d.followup %}
+                <p><strong>Follow-up:</strong> {{ d.followup }}</p>
+            {% endif %}
+            {% if d.files %}
+                <p><strong>Files:</strong></p>
+                <ul>
+                    {% for f in d.files %}
+                        <li><a href="{{ url_for('static', filename='uploads/' ~ f.filename) }}" target="_blank">{{ f.filename }}</a></li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+        </div>
+    {% endfor %}
+{% else %}
+    <p class="small">No records available.</p>
+{% endif %}
+{% endblock %}

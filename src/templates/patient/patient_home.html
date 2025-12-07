@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Patient Dashboard - Clinic Management</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="dashboard">
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <h2><i class="fas fa-stethoscope"></i> MediCare</h2>
+            <p>Patient Portal</p>
+        </div>
+        
+        <div class="user-info">
+            <div class="user-avatar">
+                <i class="fas fa-user-injured"></i>
+            </div>
+            <h3>{{ session.user_name }}</h3>
+            <p class="user-role">Patient</p>
+        </div>
+        
+        <nav class="sidebar-nav">
+            <a href="{{ url_for('patient.patient_home') }}" class="active">
+                <i class="fas fa-home"></i> Dashboard
+            </a>
+            <a href="{{ url_for('patient.appointments') }}">
+                <i class="fas fa-calendar-check"></i> Appointments
+            </a>
+            <a href="{{ url_for('patient.diagnosis') }}">
+                <i class="fas fa-file-medical"></i> Medical History
+            </a>
+            <a href="{{ url_for('patient.profile') }}">
+                <i class="fas fa-user-circle"></i> Profile
+            </a>
+            <a href="{{ url_for('auth.logout') }}">
+                <i class="fas fa-sign-out-alt"></i> Logout
+            </a>
+        </nav>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Header -->
+        <header class="dashboard-header">
+            <h1>Patient Dashboard</h1>
+            <div class="header-actions">
+                <button class="btn-notification">
+                    <i class="fas fa-bell"></i>
+                    <span class="notification-badge">3</span>
+                </button>
+                <div class="current-date">
+                    <i class="fas fa-calendar-day"></i>
+                    <span id="currentDate"></span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Dashboard Content -->
+        <div class="dashboard-content">
+            <!-- Welcome Banner -->
+            <div class="welcome-banner">
+                <div class="welcome-text">
+                    <h2>Welcome, {{ session.user_name }}!</h2>
+                    <p>Manage your appointments and access your medical records.</p>
+                </div>
+                <div class="welcome-actions">
+                    <a href="{{ url_for('patient.appointments') }}" class="btn-primary">
+                        <i class="fas fa-calendar-plus"></i> Book Appointment
+                    </a>
+                </div>
+            </div>
+
+            <!-- Quick Stats -->
+            <div class="stats-container">
+                <div class="stat-card">
+                    <div class="stat-icon upcoming">
+                        <i class="fas fa-calendar-alt"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3>Upcoming Appointments</h3>
+                        <p class="stat-number">
+                            {{ appointments|selectattr('status', 'equalto', 'Upcoming')|list|length }}
+                        </p>
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-icon completed">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3>Completed Visits</h3>
+                        <p class="stat-number">
+                            {{ appointments|selectattr('status', 'equalto', 'Completed')|list|length }}
+                        </p>
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-icon records">
+                        <i class="fas fa-file-medical-alt"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3>Medical Records</h3>
+                        <p class="stat-number">{{ medical_history|length }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Upcoming Appointments -->
+            <div class="section-card">
+                <div class="section-header">
+                    <h2><i class="fas fa-calendar-alt"></i> Upcoming Appointments</h2>
+                    <a href="{{ url_for('patient.appointments') }}" class="view-all">View All</a>
+                </div>
+                
+                {% if appointments %}
+                <div class="appointments-list">
+                    {% for appointment in appointments if appointment.status == 'Upcoming' %}
+                    <div class="appointment-item">
+                        <div class="appointment-date">
+                            <div class="date-day">{{ appointment.date.split('-')[2] }}</div>
+                            <div class="date-month">{{ appointment.date.split('-')[1] }}</div>
+                        </div>
+                        <div class="appointment-info">
+                            <h3>Appointment with {{ appointment.doctor }}</h3>
+                            <p><i class="fas fa-clock"></i> {{ appointment.time }}</p>
+                            <p><i class="fas fa-user-md"></i> {{ appointment.doctor }}</p>
+                        </div>
+                        <div class="appointment-status status-upcoming">
+                            {{ appointment.status }}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="empty-state">
+                    <i class="fas fa-calendar-times"></i>
+                    <p>No upcoming appointments</p>
+                    <a href="{{ url_for('patient.appointments') }}" class="btn-secondary">Book Now</a>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Recent Medical History -->
+            <div class="section-card">
+                <div class="section-header">
+                    <h2><i class="fas fa-history"></i> Recent Medical History</h2>
+                    <a href="{{ url_for('patient.diagnosis') }}" class="view-all">View All</a>
+                </div>
+                
+                {% if medical_history %}
+                <div class="history-list">
+                    {% for record in medical_history[:3] %}
+                    <div class="history-item">
+                        <div class="history-date">{{ record.date }}</div>
+                        <div class="history-details">
+                            <h3>{{ record.diagnosis }}</h3>
+                            <p>{{ record.treatment }}</p>
+                            <p class="history-doctor">Dr. {{ record.doctor }}</p>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="empty-state">
+                    <i class="fas fa-file-medical"></i>
+                    <p>No medical records found</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Set current date
+        const now = new Date();
+        const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+        document.getElementById('currentDate').textContent = now.toLocaleDateString('en-US', options);
+    </script>
+</body>
+</html>
+

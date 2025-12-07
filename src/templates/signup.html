@@ -1,36 +1,55 @@
-{% extends "base.html" %}   
-{% block title %}Sign Up{% endblock %}
-{% block content %}
-<h1 class="text-center">Sign Up</h1>
-<form method="POST" action="{{ url_for('auth.signup') }}"><!--authO_controller.py-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign Up - Clinic Management</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="auth-page">
+    <div class="auth-container">
+        <div class="auth-header">
+            <h1><i class="fas fa-stethoscope"></i> Create Account</h1>
+            <p>Register as a new patient</p>
+        </div>
+        
+        <div class="auth-card">
+            <form method="POST" action="{{ url_for('auth.signup') }}">
+                <div class="form-group">
+                    <label for="full_name"><i class="fas fa-user-circle"></i> Full Name</label>
+                    <input type="text" id="full_name" name="full_name" required placeholder="Enter your full name">
+                </div>
+                
+                <div class="form-group">
+                    <label for="email"><i class="fas fa-envelope"></i> Email Address</label>
+                    <input type="email" id="email" name="email" required placeholder="Enter your email">
+                </div>
+                
+                <div class="form-group">
+                    <label for="phone"><i class="fas fa-phone"></i> Phone Number</label>
+                    <input type="tel" id="phone" name="phone" required placeholder="Enter your phone number">
+                </div>
+                
+                <div class="form-group">
+                    <label for="password"><i class="fas fa-lock"></i> Password</label>
+                    <input type="password" id="password" name="password" required placeholder="Create a password">
+                </div>
+                
+                <div class="form-group">
+                    <label for="confirm_password"><i class="fas fa-lock"></i> Confirm Password</label>
+                    <input type="password" id="confirm_password" name="confirm_password" required placeholder="Confirm your password">
+                </div>
+                
+                <button type="submit" class="btn-primary">Create Account</button>
+            </form>
+            
+            <div class="auth-footer">
+                <p>Already have an account? <a href="{{ url_for('auth.login') }}">Sign in</a></p>
+                <p class="home-link"><a href="{{ url_for('home') }}">Back to Home</a></p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
 
-    <div class="form-group">
-        <label for="firstName">First Name:</label>
-        <input type="text" class="form-control" id="firstName" placeholder="Enter your first name" name="firstName">
-    </div>
-    <div class="form-group">
-        <label for="lastName">Last Name:</label>
-        <input type="text" class="form-control" id="lastName" placeholder="Enter your last name" name="lastName">
-    </div>
-        <div class="form-group">
-        <label for="email">Email address:</label>
-        <input type="email" class="form-control" id="email" placeholder="Enter email" name="email">
-    </div>
-    <div class="form-group">
-        <label for="pwd">Password:</label>
-        <input type="password" class="form-control" id="pwd" placeholder="Enter password" name="pswd">
-    </div>
-    <div class="form-group">
-        <label for="pwd2">Password: (Confirm)</label>
-        <input type="password" class="form-control" id="pwd2" placeholder="Confirm password" name="pswd2">
-    </div>
-    <button type="submit" class="btn btn-primary">Sign Up</button>
-
-</form>
-
-<hr>
-
-<div>
-    <p>Already have an account? <a href="{{ url_for('auth.login') }}">Login here</a></p><!--authO_controller.py-->
-</div>  
-{% endblock %}

@@ -1,5 +1,10 @@
 {% extends "base.html" %}
 {% block content %}
-<h1>#Contact</h1>
-<p>This is contact page.</p>
+<h2>Contact Us</h2>
+<form method="post" action="{{ url_for('home.contact') }}">
+    <input class="input-box" name="name" placeholder="Your name" required>
+    <input class="input-box" name="email" type="email" placeholder="Your email" required>
+    <textarea class="input-box" name="message" placeholder="Your message" required></textarea>
+    <button class="button" type="submit">Send</button>
+</form>
 {% endblock %}

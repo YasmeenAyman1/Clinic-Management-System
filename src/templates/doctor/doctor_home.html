@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Doctor Dashboard - Clinic Management</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="dashboard">
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <h2><i class="fas fa-stethoscope"></i> MediCare</h2>
+            <p>Doctor Portal</p>
+        </div>
+        
+        <div class="user-info">
+            <div class="user-avatar">
+                <i class="fas fa-user-md"></i>
+            </div>
+            <h3>{{ session.user_name }}</h3>
+            <p class="user-role">Doctor</p>
+        </div>
+        
+        <nav class="sidebar-nav">
+            <a href="{{ url_for('doctor.doctor_home') }}" class="active">
+                <i class="fas fa-home"></i> Dashboard
+            </a>
+            <a href="{{ url_for('doctor.search_patient') }}">
+                <i class="fas fa-search"></i> Search Patient
+            </a>
+            <a href="#">
+                <i class="fas fa-prescription"></i> Prescriptions
+            </a>
+            <a href="#">
+                <i class="fas fa-chart-line"></i> Analytics
+            </a>
+            <a href="{{ url_for('auth.logout') }}">
+                <i class="fas fa-sign-out-alt"></i> Logout
+            </a>
+        </nav>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Header -->
+        <header class="dashboard-header">
+            <h1>Doctor Dashboard</h1>
+            <div class="header-actions">
+                <div class="search-box">
+                    <input type="text" placeholder="Search patients...">
+                    <button><i class="fas fa-search"></i></button>
+                </div>
+                <div class="current-date">
+                    <i class="fas fa-calendar-day"></i>
+                    <span id="currentDate"></span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Dashboard Content -->
+        <div class="dashboard-content">
+            <!-- Welcome Banner -->
+            <div class="welcome-banner doctor-banner">
+                <div class="welcome-text">
+                    <h2>Welcome, Dr. {{ session.user_name.split(' ')[-1] }}!</h2>
+                    <p>Manage your appointments and patient care efficiently.</p>
+                </div>
+                <div class="welcome-actions">
+                    <a href="{{ url_for('doctor.search_patient') }}" class="btn-primary">
+                        <i class="fas fa-user-plus"></i> New Patient
+                    </a>
+                </div>
+            </div>
+
+            <!-- Today's Schedule -->
+            <div class="section-card">
+                <div class="section-header">
+                    <h2><i class="fas fa-calendar-day"></i> Today's Appointments</h2>
+                    <a href="#" class="view-all">Full Schedule</a>
+                </div>
+                
+                <div class="appointments-table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Time</th>
+                                <th>Patient</th>
+                                <th>Status</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for appointment in appointments %}
+                            <tr>
+                                <td>{{ appointment.time }}</td>
+                                <td>{{ appointment.patient }}</td>
+                                <td>
+                                    <span class="status-badge status-{{ appointment.status|lower }}">
+                                        {{ appointment.status }}
+                                    </span>
+                                </td>
+                                <td>
+                                    {% if appointment.status == 'Waiting' %}
+                                    <a href="{{ url_for('doctor.medical_file', patient_id=loop.index) }}" 
+                                       class="btn-small btn-primary">
+                                        <i class="fas fa-file-medical"></i> View File
+                                    </a>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Recent Patients -->
+            <div class="section-card">
+                <div class="section-header">
+                    <h2><i class="fas fa-users"></i> Recent Patients</h2>
+                    <a href="{{ url_for('doctor.search_patient') }}" class="view-all">View All</a>
+                </div>
+                
+                <div class="patients-grid">
+                    {% for patient in patients %}
+                    <div class="patient-card">
+                        <div class="patient-avatar">
+                            <i class="fas fa-user-injured"></i>
+                        </div>
+                        <div class="patient-info">
+                            <h3>{{ patient.name }}</h3>
+                            <p><i class="fas fa-user"></i> Age: {{ patient.age }}</p>
+                            <p><i class="fas fa-phone"></i> {{ patient.phone }}</p>
+                        </div>
+                        <div class="patient-actions">
+                            <a href="{{ url_for('doctor.medical_file', patient_id=patient.id) }}" 
+                               class="btn-small btn-secondary">
+                                <i class="fas fa-eye"></i> View
+                            </a>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="quick-actions">
+                <h2><i class="fas fa-bolt"></i> Quick Actions</h2>
+                <div class="actions-grid">
+                    <a href="{{ url_for('doctor.search_patient') }}" class="action-card">
+                        <div class="action-icon">
+                            <i class="fas fa-search"></i>
+                        </div>
+                        <h3>Search Patient</h3>
+                        <p>Find patient records quickly</p>
+                    </a>
+                    
+                    <a href="#" class="action-card">
+                        <div class="action-icon">
+                            <i class="fas fa-prescription"></i>
+                        </div>
+                        <h3>Write Prescription</h3>
+                        <p>Create new medication orders</p>
+                    </a>
+                    
+                    <a href="#" class="action-card">
+                        <div class="action-icon">
+                            <i class="fas fa-file-export"></i>
+                        </div>
+                        <h3>Generate Reports</h3>
+                        <p>Create patient health reports</p>
+                    </a>
+                    
+                    <a href="#" class="action-card">
+                        <div class="action-icon">
+                            <i class="fas fa-calendar-plus"></i>
+                        </div>
+                        <h3>Add Availability</h3>
+                        <p>Update your schedule</p>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Set current date
+        const now = new Date();
+        const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+        document.getElementById('currentDate').textContent = now.toLocaleDateString('en-US', options);
+    </script>
+</body>
+</html>
+
