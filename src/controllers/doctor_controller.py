@@ -1,5 +1,5 @@
 from flask import Flask, render_template, Blueprint
-from models.upload_model import Upload
+# from repositories.repositories_factory import RepositoryFactory
 
 doctor_bp = Blueprint('doctor', __name__, url_prefix='/doctor')
 
