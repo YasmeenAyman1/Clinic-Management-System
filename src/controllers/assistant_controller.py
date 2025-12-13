@@ -1,5 +1,5 @@
 from flask import Flask, Blueprint, render_template, redirect, url_for
-from models.user_model import User
+# from repositories.repositories_factory import RepositoryFactory
 
 assistant_bp = Blueprint('assistant', __name__, url_prefix='/assistant')
 

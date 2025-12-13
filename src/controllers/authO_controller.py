@@ -1,4 +1,5 @@
 from flask import Flask, render_template, redirect, url_for, Blueprint, request, flash, session
+# from repositories.repositories_factory import RepositoryFactory
 
 authO_bp = Blueprint('auth', __name__, url_prefix='/auth')
 users = {
