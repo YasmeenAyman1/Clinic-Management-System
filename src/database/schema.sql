@@ -88,7 +88,7 @@ create table MedicalRecord(
     FOREIGN KEY (uploaded_by_user_id) REFERENCES user(id) ON DELETE SET NULL
 );
 
-create table UploadedFile(
+CREATE TABLE UploadedFile(
     id int auto_increment primary key,
     file_path VARCHAR(500) NOT NULL,
     file_type varchar(50)NOT NULL,
@@ -104,4 +104,13 @@ create table UploadedFile(
     foreign key (uploaded_by_user_id) REFERENCES user(id) ON DELETE SET NULL
 );
 
-
+CREATE TABLE Admin_Audit (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    admin_user_id INT NOT NULL,
+    action VARCHAR(100) NOT NULL,
+    target_user_id INT NULL,
+    target_type VARCHAR(50) NULL,
+    details VARCHAR(500) NULL,
+    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (admin_user_id) REFERENCES user(id) ON DELETE SET NULL
+);
