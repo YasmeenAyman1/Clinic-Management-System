@@ -114,3 +114,4 @@ CREATE TABLE Admin_Audit (
     timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (admin_user_id) REFERENCES user(id) ON DELETE SET NULL
 );
+
