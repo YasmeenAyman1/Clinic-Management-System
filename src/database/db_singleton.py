@@ -60,4 +60,3 @@ class DatabaseConnection:
         if self.connection and self.connection.is_connected():
             self.connection.close()
             self.connection = None
-
