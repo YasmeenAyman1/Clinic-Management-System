@@ -1,0 +1,110 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container py-4">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>Admin Dashboard</h2>
+    <div>
+      <span class="badge bg-info">Pending: {{ pending_count }}</span>
+    </div>
+  </div>
+
+  <div class="mb-3">
+    <input id="pendingSearch" class="form-control" placeholder="Search pending accounts by email, name, or role" />
+  </div>
+
+  <h4>Pending Accounts</h4>
+  {% if pending %}
+    <div class="table-responsive">
+    <table class="table" id="pendingTable">
+      <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Phone</th><th>Created</th><th>Actions</th></tr></thead>
+      <tbody>
+        {% for u in pending %}
+          <tr>
+            <td>{{ (u.firstName ~ ' ' ~ u.lastName) if u.firstName else '—' }}</td>
+            <td>{{ u.username }}</td>
+            <td>{{ u.role }}</td>
+            <td>{{ u.phone if u.phone else '—' }}</td>
+            <td>{{ u.created_at }}</td>
+            <td>
+              <form method="post" action="{{ url_for('admin.approve_user', user_id=u.id) }}" style="display:inline-block;">
+                <input type="hidden" name="csrf_token" value="{{ session.get('csrf_token') }}" />
+                {% if u.role == 'assistant' %}
+                  <select name="assign_doctor" class="form-select d-inline-block w-auto me-2">
+                    <option value="">Assign doctor</option>
+                    {% for d in doctors %}
+                      <option value="{{ d.id }}">{{ d.firstName }} {{ d.lastName }} ({{ d.specialization }})</option>
+                    {% endfor %}
+                  </select>
+                {% endif %}
+                <button class="btn btn-success btn-sm" type="submit">Approve</button>
+              </form>
+              <form method="post" action="{{ url_for('admin.reject_user', user_id=u.id) }}" style="display:inline-block; margin-left:6px;">
+                <input type="hidden" name="csrf_token" value="{{ session.get('csrf_token') }}" />
+                <button class="btn btn-danger btn-sm" type="submit">Reject</button>
+              </form>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    </div>
+
+    <!-- Pagination -->
+    <nav aria-label="Pending page navigation" class="mt-3">
+      <ul class="pagination">
+        {% if page > 1 %}
+          <li class="page-item"><a class="page-link" href="?page={{ page-1 }}&per_page={{ per_page }}">Previous</a></li>
+        {% endif %}
+        {% for p in range(1, (total_pages or 1) + 1) %}
+          <li class="page-item {% if p == page %}active{% endif %}"><a class="page-link" href="?page={{ p }}&per_page={{ per_page }}">{{ p }}</a></li>
+        {% endfor %}
+        {% if page < total_pages %}
+          <li class="page-item"><a class="page-link" href="?page={{ page+1 }}&per_page={{ per_page }}">Next</a></li>
+        {% endif %}
+      </ul>
+    </nav>
+  {% else %}
+    <p>No pending accounts.</p>
+  {% endif %}
+</div>
+
+<div class="container py-4">
+  <h4>Recent Admin Actions</h4>
+  {% if recent_audits %}
+    <div class="table-responsive">
+      <table class="table table-sm">
+        <thead><tr><th>When</th><th>Admin ID</th><th>Action</th><th>Target</th><th>Details</th></tr></thead>
+        <tbody>
+          {% for a in recent_audits %}
+            <tr>
+              <td>{{ a.created_at }}</td>
+              <td>{{ a.admin_user_id }}</td>
+              <td>{{ a.action }}</td>
+              <td>{{ a.target_type }} #{{ a.target_user_id }}</td>
+              <td>{{ a.details or '—' }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <p>No recent actions.</p>
+  {% endif %}
+</div>
+
+<script>
+// Simple client-side filter for pending table
+(function(){
+  const input = document.getElementById('pendingSearch');
+  if(!input) return;
+  input.addEventListener('input', function(){
+    const q = this.value.toLowerCase();
+    const rows = document.querySelectorAll('#pendingTable tbody tr');
+    rows.forEach(r => {
+      const txt = r.innerText.toLowerCase();
+      r.style.display = txt.indexOf(q) === -1 ? 'none' : '';
+    });
+  });
+})();
+</script>
+{% endblock %}
