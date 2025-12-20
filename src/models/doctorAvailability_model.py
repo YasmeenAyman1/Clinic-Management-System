@@ -16,3 +16,4 @@ class DoctorAvailability:
             "end_time": self.end_time,
             "created_at": self.created_at,
         }
+    
