@@ -1,0 +1,575 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header Section -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h2 fw-bold text-primary">
+                <i class="fas fa-users-medical me-2"></i>
+                Patient Management
+            </h1>
+            <p class="text-muted mb-0">Manage and view all patient records in one place</p>
+        </div>
+        <div>
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addPatientModal">
+                <i class="fas fa-user-plus me-2"></i>Add New Patient
+            </button>
+            <a href="{{ url_for('doctor.search_patient') }}" class="btn btn-outline-primary ms-2">
+                <i class="fas fa-search me-2"></i>Search
+            </a>
+        </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs fw-bold text-primary text-uppercase mb-1">
+                                Total Patients
+                            </div>
+                            <div class="h5 mb-0 fw-bold text-gray-800">{{ total_patients }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-users fa-2x text-primary"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs fw-bold text-success text-uppercase mb-1">
+                                Active Today
+                            </div>
+                            <div class="h5 mb-0 fw-bold text-gray-800">{{ active_today }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-user-check fa-2x text-success"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs fw-bold text-warning text-uppercase mb-1">
+                                Appointments Today
+                            </div>
+                            <div class="h5 mb-0 fw-bold text-gray-800">{{ appointments_count }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-calendar-day fa-2x text-warning"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs fw-bold text-info text-uppercase mb-1">
+                                New This Month
+                            </div>
+                            <div class="h5 mb-0 fw-bold text-gray-800">{{ new_this_month }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-user-clock fa-2x text-info"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Patients Table -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3 d-flex justify-content-between align-items-center">
+            <h6 class="m-0 fw-bold text-primary">
+                <i class="fas fa-list me-2"></i>All Patients ({{ total_patients }})
+            </h6>
+            <div class="d-flex">
+                <div class="input-group input-group-sm me-2" style="width: 250px;">
+                    <input type="text" class="form-control" placeholder="Search patients..." id="searchInput">
+                    <button class="btn btn-outline-secondary" type="button">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </div>
+                <div class="dropdown">
+                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" 
+                            data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="fas fa-filter me-1"></i>Filter
+                    </button>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="#" onclick="filterPatients('all')">All Patients</a></li>
+                        <li><a class="dropdown-item" href="#" onclick="filterPatients('active')">Active</a></li>
+                        <li><a class="dropdown-item" href="#" onclick="filterPatients('inactive')">Inactive</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="#" onclick="filterPatients('appointments')">With Upcoming Appointments</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <div class="card-body">
+            {% if patients and patients|length > 0 %}
+            <div class="table-responsive">
+                <table class="table table-hover" id="patientsTable">
+                    <thead>
+                        <tr>
+                            <th>Patient ID</th>
+                            <th>Name</th>
+                            <th>Age</th>
+                            <th>Gender</th>
+                            <th>Contact</th>
+                            <th>Registration Date</th>
+                            <th>Last Visit</th>
+                            <th>Medical Records</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for patient in patients %}
+                        <tr>
+                            <td><span class="badge bg-light text-dark">#PAT{{ "%03d" % patient.id }}</span></td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    {% set initials = patient.firstName[0] + patient.lastName[0] if patient.firstName and patient.lastName else '??' %}
+                                    <div class="rounded-circle 
+                                        {% if patient.gender|lower == 'male' %}bg-primary
+                                        {% elif patient.gender|lower == 'female' %}bg-danger
+                                        {% else %}bg-secondary{% endif %}
+                                        text-white d-flex align-items-center justify-content-center me-3" 
+                                         style="width: 40px; height: 40px;">
+                                        <span>{{ initials|upper }}</span>
+                                    </div>
+                                    <div>
+                                        <h6 class="mb-0">{{ patient.firstName }} {{ patient.lastName }}</h6>
+                                        <small class="text-muted">
+                                            {% if patient.birth_date %}
+                                                {{ calculate_age(patient.birth_date) }} years old
+                                            {% else %}
+                                                Age not specified
+                                            {% endif %}
+                                        </small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                {% if patient.birth_date %}
+                                    {{ calculate_age(patient.birth_date) }}
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if patient.gender|lower == 'male' %}
+                                    <i class="fas fa-mars text-primary me-1"></i> Male
+                                {% elif patient.gender|lower == 'female' %}
+                                    <i class="fas fa-venus text-danger me-1"></i> Female
+                                {% else %}
+                                    <i class="fas fa-genderless text-secondary me-1"></i> Other
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div>{{ patient.phone }}</div>
+                                {% if patient.address %}
+                                    <small class="text-muted">{{ patient.address[:30] }}{% if patient.address|length > 30 %}...{% endif %}</small>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if patient.create_at %}
+                                    <div>
+                                        {% if patient.create_at is string %}
+                                            {{ patient.create_at[:10] }}
+                                        {% else %}
+                                            {{ patient.create_at.strftime('%Y-%m-%d') }}
+                                        {% endif %}
+                                    </div>
+                                    <small class="text-muted">
+                                        Registered
+                                        {% set days_ago = 0 %}
+                                        {% if patient.create_at is string %}
+                                            {% set create_date = patient.create_at[:10] %}
+                                            {{ create_date }}
+                                        {% else %}
+                                            {% set now_date = now().date() %}
+                                            {% set create_date = patient.create_at.date() %}
+                                            {% set days_ago = (now_date - create_date).days %}
+                                            {% if days_ago == 0 %}
+                                                today
+                                            {% elif days_ago == 1 %}
+                                                yesterday
+                                            {% elif days_ago < 7 %}
+                                                {{ days_ago }} days ago
+                                            {% elif days_ago < 30 %}
+                                                {{ (days_ago / 7)|round|int }} weeks ago
+                                            {% else %}
+                                                {{ (days_ago / 30)|round|int }} months ago
+                                            {% endif %}
+                                        {% endif %}
+                                    </small>
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% set last_visit = patient_last_visits.get(patient.id) %}
+                                {% if last_visit %}
+                                    <div>
+                                        {% if last_visit is string %}
+                                            {{ last_visit[:10] }}
+                                        {% else %}
+                                            {{ last_visit.strftime('%Y-%m-%d') }}
+                                        {% endif %}
+                                    </div>
+                                    <small class="text-muted">Last visit</small>
+                                {% else %}
+                                    <span class="text-muted">No visits</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge 
+                                    {% if patient_records_count.get(patient.id, 0) > 0 %}bg-info
+                                    {% else %}bg-secondary{% endif %}">
+                                    {{ patient_records_count.get(patient.id, 0) }} records
+                                </span>
+                            </td>
+                            <td>
+                                {% set has_appointment_today = patient.id in appointment_ids_today %}
+                                {% if has_appointment_today %}
+                                    <span class="badge bg-success">
+                                        <i class="fas fa-calendar-check me-1"></i> Active Today
+                                    </span>
+                                {% else %}
+                                    <span class="badge bg-secondary">Inactive Today</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    <a href="{{ url_for('doctor.medical_file', pid=patient.id) }}" 
+                                       class="btn btn-outline-primary" title="View Medical File">
+                                        <i class="fas fa-file-medical"></i>
+                                    </a>
+                                    <a href="#" class="btn btn-outline-info" title="View Details" 
+                                       data-bs-toggle="modal" data-bs-target="#patientDetailsModal{{ patient.id }}">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <button class="btn btn-outline-warning" title="Edit Patient" disabled>
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                </div>
+                                
+                                <!-- Patient Details Modal -->
+                                <div class="modal fade" id="patientDetailsModal{{ patient.id }}" tabindex="-1" 
+                                     aria-labelledby="patientDetailsModalLabel{{ patient.id }}" aria-hidden="true">
+                                    <div class="modal-dialog modal-lg">
+                                        <div class="modal-content">
+                                            <div class="modal-header">
+                                                <h5 class="modal-title" id="patientDetailsModalLabel{{ patient.id }}">
+                                                    <i class="fas fa-user me-2"></i>
+                                                    Patient Details: {{ patient.firstName }} {{ patient.lastName }}
+                                                </h5>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                            </div>
+                                            <div class="modal-body">
+                                                <div class="row mb-3">
+                                                    <div class="col-md-8">
+                                                        <div class="d-flex align-items-center">
+                                                            <div class="rounded-circle 
+                                                                {% if patient.gender|lower == 'male' %}bg-primary
+                                                                {% elif patient.gender|lower == 'female' %}bg-danger
+                                                                {% else %}bg-secondary{% endif %}
+                                                                text-white d-flex align-items-center justify-content-center me-3" 
+                                                                 style="width: 60px; height: 60px;">
+                                                                <span style="font-size: 18px;">
+                                                                    {% if patient.firstName and patient.lastName %}
+                                                                        {{ patient.firstName[0] }}{{ patient.lastName[0] }}
+                                                                    {% else %}
+                                                                        ??
+                                                                    {% endif %}
+                                                                </span>
+                                                            </div>
+                                                            <div>
+                                                                <h4 class="mb-1">{{ patient.firstName }} {{ patient.lastName }}</h4>
+                                                                <p class="text-muted mb-0">Patient ID: #PAT{{ "%03d" % patient.id }}</p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-4 text-end">
+                                                        <span class="badge 
+                                                            {% if patient.id in appointment_ids_today %}bg-success
+                                                            {% else %}bg-secondary{% endif %} p-2">
+                                                            {% if patient.id in appointment_ids_today %}
+                                                                <i class="fas fa-calendar-check me-1"></i> Active Today
+                                                            {% else %}
+                                                                Inactive Today
+                                                            {% endif %}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                                
+                                                <div class="row">
+                                                    <div class="col-md-6">
+                                                        <div class="card border-0 bg-light">
+                                                            <div class="card-body">
+                                                                <h6 class="text-primary mb-3"><i class="fas fa-info-circle me-2"></i>Personal Information</h6>
+                                                                <p><strong>Full Name:</strong> {{ patient.firstName }} {{ patient.lastName }}</p>
+                                                                <p><strong>Gender:</strong> {{ patient.gender|title }}</p>
+                                                                <p><strong>Date of Birth:</strong> 
+                                                                    {% if patient.birth_date %}
+                                                                        {{ patient.birth_date }} 
+                                                                        <span class="text-muted">({{ calculate_age(patient.birth_date) }} years)</span>
+                                                                    {% else %}
+                                                                        <span class="text-muted">Not specified</span>
+                                                                    {% endif %}
+                                                                </p>
+                                                                <p><strong>Phone:</strong> {{ patient.phone }}</p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <div class="card border-0 bg-light">
+                                                            <div class="card-body">
+                                                                <h6 class="text-primary mb-3"><i class="fas fa-address-card me-2"></i>Contact Information</h6>
+                                                                <p><strong>Address:</strong> {{ patient.address or 'Not specified' }}</p>
+                                                                <p><strong>Registration Date:</strong> 
+                                                                    {% if patient.create_at %}
+                                                                        {% if patient.create_at is string %}
+                                                                            {{ patient.create_at }}
+                                                                        {% else %}
+                                                                            {{ patient.create_at.strftime('%Y-%m-%d %H:%M:%S') }}
+                                                                        {% endif %}
+                                                                    {% else %}
+                                                                        Not available
+                                                                    {% endif %}
+                                                                </p>
+                                                                <p><strong>User Account:</strong> 
+                                                                    {% if patient.user_id %}
+                                                                        <span class="badge bg-success">Linked</span>
+                                                                    {% else %}
+                                                                        <span class="badge bg-secondary">No account</span>
+                                                                    {% endif %}
+                                                                </p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                
+                                                <hr>
+                                                
+                                                <div class="row">
+                                                    <div class="col-12">
+                                                        <h6 class="text-primary mb-3"><i class="fas fa-clipboard-list me-2"></i>Medical Summary</h6>
+                                                        <div class="row">
+                                                            <div class="col-md-3">
+                                                                <div class="text-center p-3 border rounded">
+                                                                    <div class="h4 mb-0">{{ patient_records_count.get(patient.id, 0) }}</div>
+                                                                    <small class="text-muted">Medical Records</small>
+                                                                </div>
+                                                            </div>
+                                                            <div class="col-md-3">
+                                                                <div class="text-center p-3 border rounded">
+                                                                    <div class="h4 mb-0">
+                                                                        {% if patient.id in appointment_ids_today %}1{% else %}0{% endif %}
+                                                                    </div>
+                                                                    <small class="text-muted">Today's Appointments</small>
+                                                                </div>
+                                                            </div>
+                                                            <div class="col-md-6">
+                                                                <div class="p-3 border rounded">
+                                                                    <strong>Last Visit:</strong> 
+                                                                    {% set last_visit = patient_last_visits.get(patient.id) %}
+                                                                    {% if last_visit %}
+                                                                        {% if last_visit is string %}
+                                                                            {{ last_visit }}
+                                                                        {% else %}
+                                                                            {{ last_visit.strftime('%Y-%m-%d') }}
+                                                                        {% endif %}
+                                                                    {% else %}
+                                                                        <span class="text-muted">No visits recorded</span>
+                                                                    {% endif %}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <a href="{{ url_for('doctor.medical_file', pid=patient.id) }}" 
+                                                   class="btn btn-primary">
+                                                    <i class="fas fa-file-medical me-2"></i>View Full Medical File
+                                                </a>
+                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Show patient count -->
+            <div class="text-muted mt-3">
+                Showing {{ patients|length }} patient{% if patients|length != 1 %}s{% endif %}
+            </div>
+            
+            {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-users fa-4x text-muted mb-3"></i>
+                <h4 class="text-muted">No Patients Found</h4>
+                <p class="text-muted">There are no patients registered in the system yet.</p>
+                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addPatientModal">
+                    <i class="fas fa-user-plus me-2"></i>Add First Patient
+                </button>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Add Patient Modal -->
+<div class="modal fade" id="addPatientModal" tabindex="-1" aria-labelledby="addPatientModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addPatientModalLabel">
+                    <i class="fas fa-user-plus me-2"></i>Add New Patient
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="addPatientForm" action="{{ url_for('doctor.add_patient') }}" method="POST">
+                <!-- CSRF token removed -->
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="firstName" class="form-label">First Name *</label>
+                            <input type="text" class="form-control" id="firstName" name="firstName" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="lastName" class="form-label">Last Name *</label>
+                            <input type="text" class="form-control" id="lastName" name="lastName" required>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="gender" class="form-label">Gender *</label>
+                            <select class="form-select" id="gender" name="gender" required>
+                                <option value="">Select Gender...</option>
+                                <option value="male">Male</option>
+                                <option value="female">Female</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="phone" class="form-label">Phone Number *</label>
+                            <input type="tel" class="form-control" id="phone" name="phone" required>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="birth_date" class="form-label">Date of Birth</label>
+                            <input type="date" class="form-control" id="birth_date" name="birth_date">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="address" class="form-label">Address</label>
+                            <input type="text" class="form-control" id="address" name="address">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="notes" class="form-label">Initial Medical Notes</label>
+                        <textarea class="form-control" id="notes" name="notes" rows="3" 
+                                  placeholder="Any known allergies, conditions, or important notes..."></textarea>
+                    </div>
+                    <div class="alert alert-info">
+                        <small>
+                            <i class="fas fa-info-circle me-1"></i>
+                            Fields marked with * are required. Phone number must be unique.
+                        </small>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save me-2"></i>Save Patient
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Table search functionality
+    document.getElementById('searchInput').addEventListener('keyup', function() {
+        const searchValue = this.value.toLowerCase();
+        const rows = document.querySelectorAll('#patientsTable tbody tr');
+        let visibleCount = 0;
+        
+        rows.forEach(row => {
+            const text = row.textContent.toLowerCase();
+            if (text.includes(searchValue)) {
+                row.style.display = '';
+                visibleCount++;
+            } else {
+                row.style.display = 'none';
+            }
+        });
+        
+        // Update showing count
+        const showingElement = document.querySelector('.text-muted.mt-3');
+        if (showingElement) {
+            showingElement.textContent = `Showing ${visibleCount} patient${visibleCount !== 1 ? 's' : ''}`;
+        }
+    });
+
+    // Filter patients function
+    function filterPatients(filterType) {
+        alert(`Filter by ${filterType} - This feature requires backend implementation.`);
+        // For future implementation:
+        // You would need to reload the page with query parameters or use AJAX
+        // Example: window.location.href = "{{ url_for('doctor.manage_patients') }}?filter=" + filterType;
+    }
+
+    // Form validation for add patient
+    document.getElementById('addPatientForm')?.addEventListener('submit', function(e) {
+        const phone = document.getElementById('phone').value;
+        const phoneRegex = /^[\+]?[1-9][\d]{0,15}$/;
+        
+        if (!phoneRegex.test(phone.replace(/[\s\-\(\)]/g, ''))) {
+            e.preventDefault();
+            alert('Please enter a valid phone number.');
+            return false;
+        }
+        
+        // Form will be submitted normally
+        return true;
+    });
+
+    // Tooltip initialization
+    document.addEventListener('DOMContentLoaded', function() {
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[title]'));
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
+    });
+</script>
+
+{% endblock %}

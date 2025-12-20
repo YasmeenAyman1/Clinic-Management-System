@@ -1,55 +1,478 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sign Up - Clinic Management</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-</head>
-<body class="auth-page">
-    <div class="auth-container">
-        <div class="auth-header">
-            <h1><i class="fas fa-stethoscope"></i> Create Account</h1>
-            <p>Register as a new patient</p>
-        </div>
-        
-        <div class="auth-card">
-            <form method="POST" action="{{ url_for('auth.signup') }}">
-                <div class="form-group">
-                    <label for="full_name"><i class="fas fa-user-circle"></i> Full Name</label>
-                    <input type="text" id="full_name" name="full_name" required placeholder="Enter your full name">
+{% extends 'base.html' %}
+
+{% block title %}Sign Up - Clinic Management System{% endblock %}
+
+{% block content %}
+<div class="auth-container">
+    <div class="signup-card">
+        <div class="card shadow-lg border-0">
+            <div class="card-body p-5">
+                <!-- Header -->
+                <div class="text-center mb-4">
+                    <i class="fas fa-user-plus fa-3x text-primary mb-3"></i>
+                    <h2 class="fw-bold">Create Your Account</h2>
+                    <p class="text-muted">Join MediCare Clinic today</p>
                 </div>
-                
-                <div class="form-group">
-                    <label for="email"><i class="fas fa-envelope"></i> Email Address</label>
-                    <input type="email" id="email" name="email" required placeholder="Enter your email">
+
+                <!-- Flash Messages -->
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ 'danger' if category == 'danger' else 'warning' if category == 'warning' else 'info' if category == 'info' else 'success' }} alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+
+                <form method="POST" action="{{ url_for('auth.signup') }}" id="signupForm">
+                    <!-- CSRF Token (if session exists) -->
+                    {% if session.get('csrf_token') %}
+                        <input type="hidden" name="csrf_token" value="{{ session.csrf_token }}">
+                    {% endif %}
+                    
+                    <!-- Role Selection -->
+                    <div class="mb-4">
+                        <label class="form-label fw-bold">
+                            <i class="fas fa-user-tag"></i> I want to register as: *
+                        </label>
+                        <div class="role-selection">
+                            <!-- Patient Card -->
+                            <label class="role-card active" id="patient-card">
+                                <input type="radio" name="role" value="patient" checked>
+                                <i class="fas fa-user-injured text-primary"></i>
+                                <h6 class="mb-1">Patient</h6>
+                                <small class="text-muted">Book appointments</small>
+                            </label>
+                            
+                            <!-- Doctor Card -->
+                            <label class="role-card" id="doctor-card">
+                                <input type="radio" name="role" value="doctor">
+                                <i class="fas fa-user-md text-success"></i>
+                                <h6 class="mb-1">Doctor</h6>
+                                <small class="text-muted">Manage patients</small>
+                            </label>
+                            
+                            <!-- Assistant Card -->
+                            <label class="role-card" id="assistant-card">
+                                <input type="radio" name="role" value="assistant">
+                                <i class="fas fa-user-nurse text-warning"></i>
+                                <h6 class="mb-1">Assistant</h6>
+                                <small class="text-muted">Support staff</small>
+                            </label>
+                        </div>
+                        <small class="text-muted">
+                            <i class="fas fa-info-circle"></i> 
+                            <span id="role-info">Patients can register immediately</span>
+                        </small>
+                    </div>
+
+                    <!-- Full Name -->
+                    <div class="mb-3">
+                        <label for="full_name" class="form-label">
+                            <i class="fas fa-user"></i> Full Name *
+                        </label>
+                        <input type="text" class="form-control" id="full_name" 
+                               name="full_name" required 
+                               placeholder="John Doe">
+                        <small class="text-muted">Enter your first and last name</small>
+                    </div>
+
+                    <!-- Email and Phone -->
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="email" class="form-label">
+                                <i class="fas fa-envelope"></i> Email Address *
+                            </label>
+                            <input type="email" class="form-control" id="email" 
+                                   name="email" required 
+                                   placeholder="john@example.com">
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="phone" class="form-label">
+                                <i class="fas fa-phone"></i> Phone Number *
+                            </label>
+                            <input type="tel" class="form-control" id="phone" 
+                                   name="phone" required 
+                                   minlength="10"
+                                   maxlength="15"
+                                   placeholder="01123456789 or 201234567890"
+                                   pattern="[0-9+]+">
+                            <small class="text-muted">Enter 10-15 digits, Egyptian format (011XXXXXX or 20XXXXXXXXXX)</small>
+                        </div>
+                    </div>
+
+                    <!-- Specialization (Only for Doctors) -->
+                    <div class="mb-3" id="specialization-field" style="display: none;">
+                        <label for="specialization" class="form-label">
+                            <i class="fas fa-stethoscope"></i> Specialization *
+                        </label>
+                        <select class="form-select" id="specialization" name="specialization">
+                            <option value="">Select your specialization</option>
+                            <option value="General">General</option>
+                            <option value="General Medicine">General Medicine</option>
+                            <option value="Cardiology">Cardiology</option>
+                            <option value="Dermatology">Dermatology</option>
+                            <option value="ENT">ENT (Ear, Nose, Throat)</option>
+                            <option value="Gastroenterology">Gastroenterology</option>
+                            <option value="Neurology">Neurology</option>
+                            <option value="Oncology">Oncology</option>
+                            <option value="Ophthalmology">Ophthalmology</option>
+                            <option value="Orthopedics">Orthopedics</option>
+                            <option value="Pediatrics">Pediatrics</option>
+                            <option value="Psychiatry">Psychiatry</option>
+                            <option value="Radiology">Radiology</option>
+                            <option value="Surgery">Surgery</option>
+                            <option value="Urology">Urology</option>
+                        </select>
+                    </div>
+
+                    <!-- Password -->
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="password" class="form-label">
+                                <i class="fas fa-lock"></i> Password *
+                            </label>
+                            <input type="password" class="form-control" id="password" 
+                                   name="password" required 
+                                   placeholder="Minimum 6 characters">
+                            <div class="password-strength" id="passwordStrength"></div>
+                            <small class="text-muted" id="strengthText"></small>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="confirm_password" class="form-label">
+                                <i class="fas fa-lock"></i> Confirm Password *
+                            </label>
+                            <input type="password" class="form-control" 
+                                   id="confirm_password" name="confirm_password" 
+                                   required placeholder="Re-enter password">
+                            <small class="text-muted" id="matchText"></small>
+                        </div>
+                    </div>
+
+                    <!-- Terms and Conditions -->
+                    <div class="form-check mb-4">
+                        <input class="form-check-input" type="checkbox" id="terms" required>
+                        <label class="form-check-label" for="terms">
+                            I agree to the <a href="#" class="text-primary">Terms & Conditions</a> 
+                            and <a href="#" class="text-primary">Privacy Policy</a>
+                        </label>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <button type="submit" class="btn btn-primary btn-lg w-100 mb-3">
+                        <i class="fas fa-user-plus"></i> Create Account
+                    </button>
+                </form>
+
+                <!-- Footer -->
+                <hr>
+                <div class="text-center">
+                    <p class="mb-2">
+                        Already have an account? 
+                        <a href="{{ url_for('auth.login') }}" class="text-primary fw-bold">Sign In</a>
+                    </p>
+                    <a href="{{ url_for('home') }}" class="text-muted">
+                        <i class="fas fa-arrow-left"></i> Back to Home
+                    </a>
                 </div>
-                
-                <div class="form-group">
-                    <label for="phone"><i class="fas fa-phone"></i> Phone Number</label>
-                    <input type="tel" id="phone" name="phone" required placeholder="Enter your phone number">
+
+                <!-- Info Alert -->
+                <div class="alert alert-info mt-4 mb-0">
+                    <small>
+                        <strong><i class="fas fa-shield-alt"></i> Your data is secure</strong><br>
+                        We use industry-standard encryption to protect your personal information.
+                    </small>
                 </div>
-                
-                <div class="form-group">
-                    <label for="password"><i class="fas fa-lock"></i> Password</label>
-                    <input type="password" id="password" name="password" required placeholder="Create a password">
-                </div>
-                
-                <div class="form-group">
-                    <label for="confirm_password"><i class="fas fa-lock"></i> Confirm Password</label>
-                    <input type="password" id="confirm_password" name="confirm_password" required placeholder="Confirm your password">
-                </div>
-                
-                <button type="submit" class="btn-primary">Create Account</button>
-            </form>
-            
-            <div class="auth-footer">
-                <p>Already have an account? <a href="{{ url_for('auth.login') }}">Sign in</a></p>
-                <p class="home-link"><a href="{{ url_for('home') }}">Back to Home</a></p>
             </div>
         </div>
     </div>
-</body>
-</html>
+</div>
 
+<style>
+/* Role Selection Cards */
+.role-selection {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 10px;
+}
+
+.role-card {
+    flex: 1;
+    padding: 15px;
+    border: 2px solid #dee2e6;
+    border-radius: 10px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    background: white;
+}
+
+.role-card:hover {
+    border-color: #0d6efd;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.role-card.active {
+    border-color: #0d6efd;
+    background-color: #e7f1ff;
+}
+
+.role-card input[type="radio"] {
+    display: none;
+}
+
+.role-card i {
+    font-size: 2rem;
+    margin-bottom: 10px;
+    display: block;
+}
+
+.role-card h6 {
+    margin: 0;
+    font-weight: 600;
+}
+
+.role-card small {
+    font-size: 0.8rem;
+}
+
+/* Password Strength Meter */
+.password-strength {
+    height: 4px;
+    width: 0;
+    background: #ddd;
+    border-radius: 2px;
+    margin-top: 5px;
+    transition: width 0.3s, background 0.3s;
+}
+
+.password-strength.strength-weak {
+    width: 33%;
+    background: #dc3545;
+}
+
+.password-strength.strength-medium {
+    width: 66%;
+    background: #ffc107;
+}
+
+.password-strength.strength-strong {
+    width: 100%;
+    background: #28a745;
+}
+
+/* Form Validation */
+.is-invalid {
+    border-color: #dc3545 !important;
+}
+
+.is-valid {
+    border-color: #28a745 !important;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .role-selection {
+        flex-direction: column;
+    }
+    
+    .card-body {
+        padding: 25px !important;
+    }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Role selection handling
+    const roleCards = document.querySelectorAll('.role-card');
+    const specializationField = document.getElementById('specialization-field');
+    const specializationInput = document.getElementById('specialization');
+    const roleInfo = document.getElementById('role-info');
+    
+    roleCards.forEach(card => {
+        card.addEventListener('click', function() {
+            // Remove active class from all cards
+            roleCards.forEach(c => c.classList.remove('active'));
+            
+            // Add active class to clicked card
+            this.classList.add('active');
+            
+            // Check the radio button
+            const radio = this.querySelector('input[type="radio"]');
+            radio.checked = true;
+            
+            // Show/hide specialization field for doctors
+            const role = radio.value;
+            if (role === 'doctor') {
+                specializationField.style.display = 'block';
+                specializationInput.required = true;
+                roleInfo.textContent = 'Doctor accounts require admin approval';
+                roleInfo.parentElement.classList.add('text-warning');
+                roleInfo.parentElement.classList.remove('text-muted');
+            } else if (role === 'assistant') {
+                specializationField.style.display = 'none';
+                specializationInput.required = false;
+                roleInfo.textContent = 'Assistant accounts require admin approval';
+                roleInfo.parentElement.classList.add('text-warning');
+                roleInfo.parentElement.classList.remove('text-muted');
+            } else {
+                specializationField.style.display = 'none';
+                specializationInput.required = false;
+                roleInfo.textContent = 'Patients can register immediately';
+                roleInfo.parentElement.classList.remove('text-warning');
+                roleInfo.parentElement.classList.add('text-muted');
+            }
+        });
+    });
+    
+    // Password strength checker
+    const passwordInput = document.getElementById('password');
+    const strengthBar = document.getElementById('passwordStrength');
+    const strengthText = document.getElementById('strengthText');
+    
+    passwordInput.addEventListener('input', function() {
+        const password = this.value;
+        let strength = 0;
+        
+        if (password.length >= 6) strength++;
+        if (password.length >= 10) strength++;
+        if (/[a-z]/.test(password) && /[A-Z]/.test(password)) strength++;
+        if (/\d/.test(password)) strength++;
+        if (/[^a-zA-Z0-9]/.test(password)) strength++;
+        
+        // Reset
+        strengthBar.style.width = '0';
+        strengthBar.className = 'password-strength';
+        strengthText.textContent = '';
+        
+        if (password.length > 0) {
+            if (strength <= 2) {
+                strengthBar.classList.add('strength-weak');
+                strengthText.textContent = 'Weak password';
+                strengthText.className = 'text-danger';
+            } else if (strength <= 3) {
+                strengthBar.classList.add('strength-medium');
+                strengthText.textContent = 'Medium password';
+                strengthText.className = 'text-warning';
+            } else {
+                strengthBar.classList.add('strength-strong');
+                strengthText.textContent = 'Strong password';
+                strengthText.className = 'text-success';
+            }
+        }
+    });
+    
+    // Password match checker
+    const confirmPasswordInput = document.getElementById('confirm_password');
+    const matchText = document.getElementById('matchText');
+    
+    function checkPasswordMatch() {
+        const password = passwordInput.value;
+        const confirmPassword = confirmPasswordInput.value;
+        
+        if (confirmPassword.length === 0) {
+            matchText.textContent = '';
+            matchText.className = 'text-muted';
+            confirmPasswordInput.classList.remove('is-invalid', 'is-valid');
+        } else if (password === confirmPassword) {
+            matchText.textContent = 'Passwords match ✓';
+            matchText.className = 'text-success';
+            confirmPasswordInput.classList.remove('is-invalid');
+            confirmPasswordInput.classList.add('is-valid');
+        } else {
+            matchText.textContent = 'Passwords do not match ✗';
+            matchText.className = 'text-danger';
+            confirmPasswordInput.classList.remove('is-valid');
+            confirmPasswordInput.classList.add('is-invalid');
+        }
+    }
+    
+    passwordInput.addEventListener('input', checkPasswordMatch);
+    confirmPasswordInput.addEventListener('input', checkPasswordMatch);
+    
+    // Phone number formatting
+    const phoneInput = document.getElementById('phone');
+    phoneInput.addEventListener('input', function(e) {
+        // Allow only numbers and + sign
+        let value = this.value.replace(/[^0-9+]/g, '');
+        
+        // Ensure + is only at the beginning if present
+        if (value.includes('+')) {
+            value = '+' + value.replace(/[^0-9]/g, '');
+        }
+        
+        // Limit length
+        if (value.length > 15) {
+            value = value.substring(0, 15);
+        }
+        
+        this.value = value;
+    });
+    
+    // Form validation
+    const form = document.getElementById('signupForm');
+    form.addEventListener('submit', function(e) {
+        let isValid = true;
+        let errorMessage = '';
+        
+        // Check full name
+        const fullName = document.getElementById('full_name').value.trim();
+        if (fullName.split(' ').length < 2) {
+            isValid = false;
+            errorMessage = 'Please enter your first and last name!';
+            document.getElementById('full_name').focus();
+        }
+        
+        // Check password
+        const password = passwordInput.value;
+        const confirmPassword = confirmPasswordInput.value;
+        
+        if (isValid && password.length < 6) {
+            isValid = false;
+            errorMessage = 'Password must be at least 6 characters long!';
+            passwordInput.focus();
+        }
+        
+        if (isValid && password !== confirmPassword) {
+            isValid = false;
+            errorMessage = 'Passwords do not match!';
+            confirmPasswordInput.focus();
+        }
+        
+        // Check phone number
+        const phone = phoneInput.value.replace(/[^0-9]/g, '');
+        if (isValid && phone.length < 10) {
+            isValid = false;
+            errorMessage = 'Please enter a valid phone number with at least 10 digits!';
+            phoneInput.focus();
+        }
+        
+        // Check if doctor role and specialization is empty
+        const role = document.querySelector('input[name="role"]:checked').value;
+        if (isValid && role === 'doctor' && !specializationInput.value) {
+            isValid = false;
+            errorMessage = 'Please select your specialization!';
+            specializationInput.focus();
+        }
+        
+        if (!isValid) {
+            e.preventDefault();
+            alert(errorMessage);
+            return false;
+        }
+        
+        // If all valid, form will submit normally
+        return true;
+    });
+    
+    // Auto-focus first field
+    document.getElementById('full_name').focus();
+});
+</script>
+{% endblock %}

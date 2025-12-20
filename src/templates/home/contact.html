@@ -1,10 +1,362 @@
 {% extends "base.html" %}
+
 {% block content %}
-<h2>Contact Us</h2>
-<form method="post" action="{{ url_for('home.contact') }}">
-    <input class="input-box" name="name" placeholder="Your name" required>
-    <input class="input-box" name="email" type="email" placeholder="Your email" required>
-    <textarea class="input-box" name="message" placeholder="Your message" required></textarea>
-    <button class="button" type="submit">Send</button>
-</form>
+<div class="container-fluid py-4">
+    <!-- Header Section -->
+    <div class="row justify-content-center mb-5">
+        <div class="col-lg-8 text-center">
+            <h1 class="display-5 fw-bold text-primary mb-3">
+                <i class="fas fa-headset me-3"></i>Contact Us
+            </h1>
+            <p class="lead text-muted">
+                Have questions or need assistance? We're here to help! Reach out to us using the form below or through our contact information.
+            </p>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Contact Information Card -->
+        <div class="col-lg-4">
+            <div class="card shadow border-0 h-100">
+                <div class="card-body p-4">
+                    <h4 class="card-title text-primary mb-4">
+                        <i class="fas fa-info-circle me-2"></i>Contact Information
+                    </h4>
+                    
+                    <div class="contact-info-item mb-4">
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="contact-icon bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-3" 
+                                 style="width: 50px; height: 50px;">
+                                <i class="fas fa-hospital fa-lg"></i>
+                            </div>
+                            <div>
+                                <h5 class="mb-0">MediCare Clinic</h5>
+                                <p class="text-muted mb-0">Providing quality healthcare since 2010</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="contact-info-item mb-4">
+                        <div class="d-flex align-items-start">
+                            <div class="contact-icon bg-success text-white rounded-circle d-flex align-items-center justify-content-center me-3" 
+                                 style="width: 40px; height: 40px;">
+                                <i class="fas fa-map-marker-alt"></i>
+                            </div>
+                            <div>
+                                <h6 class="mb-1">Our Location</h6>
+                                <p class="text-muted mb-0">
+                                    123 Medical Center Drive<br>
+                                    Health City, HC 12345<br>
+                                    United States
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="contact-info-item mb-4">
+                        <div class="d-flex align-items-start">
+                            <div class="contact-icon bg-info text-white rounded-circle d-flex align-items-center justify-content-center me-3" 
+                                 style="width: 40px; height: 40px;">
+                                <i class="fas fa-phone"></i>
+                            </div>
+                            <div>
+                                <h6 class="mb-1">Phone Numbers</h6>
+                                <p class="text-muted mb-0">
+                                    <strong>Appointments:</strong> +1 (555) 123-4567<br>
+                                    <strong>Emergency:</strong> +1 (555) 987-6543<br>
+                                    <strong>Fax:</strong> +1 (555) 123-4568
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="contact-info-item mb-4">
+                        <div class="d-flex align-items-start">
+                            <div class="contact-icon bg-warning text-white rounded-circle d-flex align-items-center justify-content-center me-3" 
+                                 style="width: 40px; height: 40px;">
+                                <i class="fas fa-envelope"></i>
+                            </div>
+                            <div>
+                                <h6 class="mb-1">Email Addresses</h6>
+                                <p class="text-muted mb-0">
+                                    <strong>General:</strong> info@medicareclinic.com<br>
+                                    <strong>Appointments:</strong> appointments@medicareclinic.com<br>
+                                    <strong>Support:</strong> support@medicareclinic.com
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="contact-info-item">
+                        <div class="d-flex align-items-start">
+                            <div class="contact-icon bg-danger text-white rounded-circle d-flex align-items-center justify-content-center me-3" 
+                                 style="width: 40px; height: 40px;">
+                                <i class="fas fa-clock"></i>
+                            </div>
+                            <div>
+                                <h6 class="mb-1">Working Hours</h6>
+                                <p class="text-muted mb-0">
+                                    <strong>Mon-Fri:</strong> 8:00 AM - 8:00 PM<br>
+                                    <strong>Saturday:</strong> 9:00 AM - 4:00 PM<br>
+                                    <strong>Sunday:</strong> Emergency Only
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Contact Form Card -->
+        <div class="col-lg-8">
+            <div class="card shadow border-0 h-100">
+                <div class="card-body p-4">
+                    <h4 class="card-title text-primary mb-4">
+                        <i class="fas fa-paper-plane me-2"></i>Send Us a Message
+                    </h4>
+                    <p class="text-muted mb-4">Fill out the form below and we'll get back to you as soon as possible.</p>
+                    
+                    <form method="post" action="{{ url_for('contact') }}" id="contactForm">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <div class="form-floating">
+                                    <input type="text" class="form-control" id="name" name="name" 
+                                           placeholder="Your Name" required>
+                                    <label for="name">
+                                        <i class="fas fa-user me-2"></i>Full Name *
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="form-floating">
+                                    <input type="email" class="form-control" id="email" name="email" 
+                                           placeholder="Your Email" required>
+                                    <label for="email">
+                                        <i class="fas fa-envelope me-2"></i>Email Address *
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <div class="col-12">
+                                <div class="form-floating">
+                                    <input type="text" class="form-control" id="subject" name="subject" 
+                                           placeholder="Subject" value="General Inquiry">
+                                    <label for="subject">
+                                        <i class="fas fa-tag me-2"></i>Subject
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <div class="col-12">
+                                <div class="form-floating">
+                                    <textarea class="form-control" id="message" name="message" 
+                                              placeholder="Your Message" style="height: 150px;" required></textarea>
+                                    <label for="message">
+                                        <i class="fas fa-comment-dots me-2"></i>Your Message *
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <div class="col-12">
+                                <div class="form-check mb-3">
+                                    <input class="form-check-input" type="checkbox" id="newsletter" name="newsletter">
+                                    <label class="form-check-label text-muted" for="newsletter">
+                                        Subscribe to our newsletter for health tips and clinic updates
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <div class="col-12">
+                                <div class="d-grid">
+                                    <button type="submit" class="btn btn-primary btn-lg">
+                                        <i class="fas fa-paper-plane me-2"></i>Send Message
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                    
+                    <!-- Emergency Notice -->
+                    <div class="alert alert-danger mt-4" role="alert">
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-exclamation-triangle fa-2x me-3"></i>
+                            <div>
+                                <h5 class="alert-heading mb-2">Emergency Contact</h5>
+                                <p class="mb-0">
+                                    If this is a medical emergency, please call <strong>911</strong> or visit the nearest emergency room immediately.
+                                    Do not use this form for emergency situations.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Map & Additional Info -->
+    <div class="row mt-5">
+        <div class="col-12">
+            <div class="card shadow border-0">
+                <div class="card-body p-4">
+                    <h4 class="card-title text-primary mb-4">
+                        <i class="fas fa-map-marked-alt me-2"></i>Find Our Clinic
+                    </h4>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <!-- Placeholder for Google Map -->
+                            <div class="map-placeholder bg-light rounded d-flex align-items-center justify-content-center" 
+                                 style="height: 300px;">
+                                <div class="text-center">
+                                    <i class="fas fa-map fa-4x text-muted mb-3"></i>
+                                    <h5 class="text-muted">Clinic Location Map</h5>
+                                    <p class="text-muted">123 Medical Center Drive, Health City</p>
+                                    <a href="https://maps.google.com/?q=123+Medical+Center+Drive,+Health+City" 
+                                       target="_blank" class="btn btn-outline-primary">
+                                        <i class="fas fa-directions me-2"></i>Get Directions
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <h5 class="mb-3">Parking & Transportation</h5>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <div class="card border-0 bg-light h-100">
+                                        <div class="card-body">
+                                            <i class="fas fa-parking fa-2x text-primary mb-3"></i>
+                                            <h6>Parking</h6>
+                                            <p class="text-muted small mb-0">Free patient parking available in front of the clinic.</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-6 mb-3">
+                                    <div class="card border-0 bg-light h-100">
+                                        <div class="card-body">
+                                            <i class="fas fa-bus fa-2x text-success mb-3"></i>
+                                            <h6>Public Transit</h6>
+                                            <p class="text-muted small mb-0">Bus lines 7, 12, and 45 stop nearby.</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-6 mb-3">
+                                    <div class="card border-0 bg-light h-100">
+                                        <div class="card-body">
+                                            <i class="fas fa-wheelchair fa-2x text-info mb-3"></i>
+                                            <h6>Accessibility</h6>
+                                            <p class="text-muted small mb-0">Wheelchair accessible with ramps and elevators.</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-6 mb-3">
+                                    <div class="card border-0 bg-light h-100">
+                                        <div class="card-body">
+                                            <i class="fas fa-wifi fa-2x text-warning mb-3"></i>
+                                            <h6>Amenities</h6>
+                                            <p class="text-muted small mb-0">Free WiFi and comfortable waiting areas.</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- FAQ Section -->
+    <div class="row mt-5">
+        <div class="col-12">
+            <div class="card shadow border-0">
+                <div class="card-body p-4">
+                    <h4 class="card-title text-primary mb-4">
+                        <i class="fas fa-question-circle me-2"></i>Frequently Asked Questions
+                    </h4>
+                    
+                    <div class="accordion" id="faqAccordion">
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="faqOne">
+                                <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne">
+                                    How do I schedule an appointment?
+                                </button>
+                            </h2>
+                            <div id="collapseOne" class="accordion-collapse collapse show" data-bs-parent="#faqAccordion">
+                                <div class="accordion-body">
+                                    You can schedule an appointment by calling our appointment line at <strong>+1 (555) 123-4567</strong>, 
+                                    using our online patient portal, or visiting the clinic in person.
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="faqTwo">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwo">
+                                    What insurance plans do you accept?
+                                </button>
+                            </h2>
+                            <div id="collapseTwo" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                                <div class="accordion-body">
+                                    We accept most major insurance plans including Medicare, Medicaid, Blue Cross Blue Shield, Aetna, Cigna, and UnitedHealthcare. 
+                                    Please contact our billing department for specific coverage questions.
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="faqThree">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseThree">
+                                    What should I bring to my first appointment?
+                                </button>
+                            </h2>
+                            <div id="collapseThree" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                                <div class="accordion-body">
+                                    Please bring your photo ID, insurance card, list of current medications, and any relevant medical records or test results from previous providers.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Form validation
+    document.getElementById('contactForm').addEventListener('submit', function(e) {
+        const email = document.getElementById('email').value;
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        
+        if (!emailRegex.test(email)) {
+            e.preventDefault();
+            alert('Please enter a valid email address.');
+            document.getElementById('email').focus();
+            return false;
+        }
+        
+        // You can add more validation here if needed
+        return true;
+    });
+    
+    // Auto-focus name field
+    document.addEventListener('DOMContentLoaded', function() {
+        const nameField = document.getElementById('name');
+        if (nameField) {
+            nameField.focus();
+        }
+        
+        // Initialize tooltips
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
+    });
+</script>
 {% endblock %}

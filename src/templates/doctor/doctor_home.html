@@ -1,196 +1,692 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Doctor Dashboard - Clinic Management</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-</head>
-<body class="dashboard">
-    <!-- Sidebar -->
-    <div class="sidebar">
-        <div class="sidebar-header">
-            <h2><i class="fas fa-stethoscope"></i> MediCare</h2>
-            <p>Doctor Portal</p>
-        </div>
-        
-        <div class="user-info">
-            <div class="user-avatar">
-                <i class="fas fa-user-md"></i>
+{% extends "base.html" %}
+
+{% block content %}
+
+<div class="dashboard-content">
+    <!-- Welcome Banner -->
+    <div class="welcome-banner doctor-banner gradient-bg">
+        <div class="welcome-text">
+            <h1 class="welcome-title">
+                {% if session.get('user_name') %}
+                    Welcome, Dr. {{ session['user_name'].split(' ')[-1] }}!
+                {% else %}
+                    Welcome, Doctor!
+                {% endif %}
+            </h1>
+            <p class="welcome-subtitle">Manage your appointments and patient care efficiently</p>
+            <div class="current-date">
+                <i class="fas fa-calendar-alt"></i>
+                <span id="currentDate"></span>
             </div>
-            <h3>{{ session.user_name }}</h3>
-            <p class="user-role">Doctor</p>
         </div>
-        
-        <nav class="sidebar-nav">
-            <a href="{{ url_for('doctor.doctor_home') }}" class="active">
-                <i class="fas fa-home"></i> Dashboard
+        <div class="welcome-actions">
+            <div class="doctor-profile">
+                <div class="profile-icon">
+                    <i class="fas fa-user-md"></i>
+                </div>
+                <div class="quick-stats">
+                    <div class="stat">
+                        <span class="stat-number">{{ appointments|length }}</span>
+                        <span class="stat-label">Today's Appointments</span>
+                    </div>
+                </div>
+            </div>
+            <a href="{{ url_for('doctor.search_patient') }}" class="btn-primary btn-lg">
+                <i class="fas fa-user-plus"></i> New Patient
             </a>
-            <a href="{{ url_for('doctor.search_patient') }}">
-                <i class="fas fa-search"></i> Search Patient
-            </a>
-            <a href="#">
-                <i class="fas fa-prescription"></i> Prescriptions
-            </a>
-            <a href="#">
-                <i class="fas fa-chart-line"></i> Analytics
-            </a>
-            <a href="{{ url_for('auth.logout') }}">
-                <i class="fas fa-sign-out-alt"></i> Logout
-            </a>
-        </nav>
+        </div>
     </div>
 
-    <!-- Main Content -->
-    <div class="main-content">
-        <!-- Header -->
-        <header class="dashboard-header">
-            <h1>Doctor Dashboard</h1>
-            <div class="header-actions">
-                <div class="search-box">
-                    <input type="text" placeholder="Search patients...">
-                    <button><i class="fas fa-search"></i></button>
-                </div>
-                <div class="current-date">
-                    <i class="fas fa-calendar-day"></i>
-                    <span id="currentDate"></span>
-                </div>
-            </div>
-        </header>
-
-        <!-- Dashboard Content -->
-        <div class="dashboard-content">
-            <!-- Welcome Banner -->
-            <div class="welcome-banner doctor-banner">
-                <div class="welcome-text">
-                    <h2>Welcome, Dr. {{ session.user_name.split(' ')[-1] }}!</h2>
-                    <p>Manage your appointments and patient care efficiently.</p>
-                </div>
-                <div class="welcome-actions">
-                    <a href="{{ url_for('doctor.search_patient') }}" class="btn-primary">
-                        <i class="fas fa-user-plus"></i> New Patient
+    <!-- Main Content Grid -->
+    <div class="dashboard-grid">
+        <!-- Left Column -->
+        <div class="dashboard-left">
+            <!-- Today's Schedule -->
+            <div class="section-card card-elevated">
+                <div class="section-header">
+                    <h2 class="section-title">
+                        <i class="fas fa-calendar-day icon-primary"></i>
+                        Today's Appointments
+                    </h2>
+                    <a href="{{ url_for('doctor.schedule') }}" class="view-all-link">
+                        View Full Schedule <i class="fas fa-arrow-right"></i>
                     </a>
                 </div>
-            </div>
-
-            <!-- Today's Schedule -->
-            <div class="section-card">
-                <div class="section-header">
-                    <h2><i class="fas fa-calendar-day"></i> Today's Appointments</h2>
-                    <a href="#" class="view-all">Full Schedule</a>
-                </div>
                 
-                <div class="appointments-table">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Time</th>
-                                <th>Patient</th>
-                                <th>Status</th>
-                                <th>Action</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for appointment in appointments %}
-                            <tr>
-                                <td>{{ appointment.time }}</td>
-                                <td>{{ appointment.patient }}</td>
-                                <td>
-                                    <span class="status-badge status-{{ appointment.status|lower }}">
-                                        {{ appointment.status }}
-                                    </span>
-                                </td>
-                                <td>
+                {% if appointments %}
+                <div class="appointments-container">
+                    {% for appointment in appointments %}
+                    <div class="appointment-card {% if appointment.status == 'Urgent' %}appointment-urgent{% endif %}">
+                        <div class="appointment-time">
+                            <span class="time-badge">{{ appointment.time }}</span>
+                        </div>
+                        <div class="appointment-info">
+                            <div class="patient-info">
+                                <h4 class="patient-name">{{ appointment.patient }}</h4>
+                                <p class="patient-id">ID: {{ appointment.patient_id }}</p>
+                            </div>
+                            <div class="appointment-meta">
+                                <span class="status-badge status-{{ appointment.status|lower }}">
+                                    <i class="fas fa-circle"></i> {{ appointment.status }}
+                                </span>
+                                <div class="appointment-actions">
                                     {% if appointment.status == 'Waiting' %}
-                                    <a href="{{ url_for('doctor.medical_file', patient_id=loop.index) }}" 
+                                    <a href="{{ url_for('doctor.medical_file', pid=appointment.patient_id) }}" 
                                        class="btn-small btn-primary">
                                         <i class="fas fa-file-medical"></i> View File
                                     </a>
+                                    {% elif appointment.status == 'Completed' %}
+                                    <span class="text-muted">
+                                        <i class="fas fa-check-circle"></i> Completed
+                                    </span>
                                     {% endif %}
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <!-- Recent Patients -->
-            <div class="section-card">
-                <div class="section-header">
-                    <h2><i class="fas fa-users"></i> Recent Patients</h2>
-                    <a href="{{ url_for('doctor.search_patient') }}" class="view-all">View All</a>
-                </div>
-                
-                <div class="patients-grid">
-                    {% for patient in patients %}
-                    <div class="patient-card">
-                        <div class="patient-avatar">
-                            <i class="fas fa-user-injured"></i>
-                        </div>
-                        <div class="patient-info">
-                            <h3>{{ patient.name }}</h3>
-                            <p><i class="fas fa-user"></i> Age: {{ patient.age }}</p>
-                            <p><i class="fas fa-phone"></i> {{ patient.phone }}</p>
-                        </div>
-                        <div class="patient-actions">
-                            <a href="{{ url_for('doctor.medical_file', patient_id=patient.id) }}" 
-                               class="btn-small btn-secondary">
-                                <i class="fas fa-eye"></i> View
-                            </a>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     {% endfor %}
                 </div>
+                {% else %}
+                <div class="empty-state">
+                    <i class="fas fa-calendar-check empty-icon"></i>
+                    <h3>No Appointments Today</h3>
+                    <p>You have no scheduled appointments for today</p>
+                    <a href="{{ url_for('doctor.schedule') }}" class="btn-outline">
+                        <i class="fas fa-calendar-plus"></i> Add Availability
+                    </a>
+                </div>
+                {% endif %}
             </div>
+        </div>
 
+        <!-- Right Column -->
+        <div class="dashboard-right">
             <!-- Quick Actions -->
-            <div class="quick-actions">
-                <h2><i class="fas fa-bolt"></i> Quick Actions</h2>
+            <div class="section-card card-elevated">
+                <div class="section-header">
+                    <h2 class="section-title">
+                        <i class="fas fa-bolt icon-primary"></i>
+                        Quick Actions
+                    </h2>
+                </div>
                 <div class="actions-grid">
-                    <a href="{{ url_for('doctor.search_patient') }}" class="action-card">
-                        <div class="action-icon">
+                    <a href="{{ url_for('doctor.search_patient') }}" class="action-card card-hover">
+                        <div class="action-icon icon-bg-blue">
                             <i class="fas fa-search"></i>
                         </div>
-                        <h3>Search Patient</h3>
-                        <p>Find patient records quickly</p>
-                    </a>
-                    
-                    <a href="#" class="action-card">
-                        <div class="action-icon">
-                            <i class="fas fa-prescription"></i>
+                        <div class="action-content">
+                            <h3>Search Patient</h3>
+                            <p>Find patient records quickly and efficiently</p>
                         </div>
-                        <h3>Write Prescription</h3>
-                        <p>Create new medication orders</p>
-                    </a>
-                    
-                    <a href="#" class="action-card">
-                        <div class="action-icon">
-                            <i class="fas fa-file-export"></i>
+                        <div class="action-arrow">
+                            <i class="fas fa-chevron-right"></i>
                         </div>
-                        <h3>Generate Reports</h3>
-                        <p>Create patient health reports</p>
                     </a>
                     
-                    <a href="#" class="action-card">
-                        <div class="action-icon">
+                    <a href="{{ url_for('doctor.schedule') }}" class="action-card card-hover">
+                        <div class="action-icon icon-bg-green">
                             <i class="fas fa-calendar-plus"></i>
                         </div>
-                        <h3>Add Availability</h3>
-                        <p>Update your schedule</p>
+                        <div class="action-content">
+                            <h3>Manage Schedule</h3>
+                            <p>Update availability and appointments</p>
+                        </div>
+                        <div class="action-arrow">
+                            <i class="fas fa-chevron-right"></i>
+                        </div>
                     </a>
+                    
+                    <a href="{{ url_for('doctor.manage_patients') }}" class="action-card card-hover">
+                        <div class="action-icon icon-bg-purple">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <div class="action-content">
+                            <h3>Patient List</h3>
+                            <p>View all registered patients</p>
+                        </div>
+                        <div class="action-arrow">
+                            <i class="fas fa-chevron-right"></i>
+                        </div>
+                    </a>
+                    
+                    <a href="{{ url_for('doctor.search_patient') }}" class="action-card card-hover">
+                        <div class="action-icon icon-bg-orange">
+                            <i class="fas fa-prescription"></i>
+                        </div>
+                        <div class="action-content">
+                            <h3>Prescriptions</h3>
+                            <p>Create and manage prescriptions</p>
+                        </div>
+                        <div class="action-arrow">
+                            <i class="fas fa-chevron-right"></i>
+                        </div>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Clinic Info -->
+            <div class="section-card card-elevated">
+                <div class="section-header">
+                    <h2 class="section-title">
+                        <i class="fas fa-hospital icon-primary"></i>
+                        MediCare Clinic
+                    </h2>
+                </div>
+                <div class="clinic-info">
+                    <div class="clinic-logo">
+                        <i class="fas fa-heartbeat"></i>
+                        <span>MediCare Clinic</span>
+                    </div>
+                    <p class="clinic-description">Providing quality healthcare since 2010</p>
+                    
+                    <div class="contact-info">
+                        <div class="contact-item">
+                            <i class="fas fa-phone"></i>
+                            <div>
+                                <span class="contact-label">Emergency Contact</span>
+                                <span class="contact-value">+123 456 7890</span>
+                            </div>
+                        </div>
+                        <div class="contact-item">
+                            <i class="fas fa-clock"></i>
+                            <div>
+                                <span class="contact-label">Working Hours</span>
+                                <span class="contact-value">Mon-Fri: 8:00 AM - 8:00 PM</span>
+                                <span class="contact-value">Sat: 9:00 AM - 4:00 PM</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
+</div>
 
-    <script>
-        // Set current date
-        const now = new Date();
-        const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-        document.getElementById('currentDate').textContent = now.toLocaleDateString('en-US', options);
-    </script>
-</body>
-</html>
+<style>
+    /* Modern Dashboard Styles */
+    .dashboard-content {
+        padding: 20px;
+        max-width: 1400px;
+        margin: 0 auto;
+    }
 
+    /* Welcome Banner */
+    .welcome-banner {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 20px;
+        padding: 40px;
+        margin-bottom: 30px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+    }
+
+    .welcome-title {
+        font-size: 2.5rem;
+        font-weight: 700;
+        margin-bottom: 10px;
+        color: white;
+    }
+
+    .welcome-subtitle {
+        font-size: 1.2rem;
+        opacity: 0.9;
+        margin-bottom: 20px;
+    }
+
+    .current-date {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 1.1rem;
+        background: rgba(255, 255, 255, 0.1);
+        padding: 10px 20px;
+        border-radius: 50px;
+        width: fit-content;
+        backdrop-filter: blur(10px);
+    }
+
+    .doctor-profile {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        margin-bottom: 20px;
+    }
+
+    .profile-icon {
+        width: 60px;
+        height: 60px;
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+    }
+
+    .quick-stats {
+        display: flex;
+        gap: 30px;
+    }
+
+    .stat {
+        text-align: center;
+    }
+
+    .stat-number {
+        display: block;
+        font-size: 2rem;
+        font-weight: bold;
+    }
+
+    .stat-label {
+        font-size: 0.9rem;
+        opacity: 0.8;
+    }
+
+    .btn-primary {
+        background: white;
+        color: #667eea;
+        border: none;
+        padding: 15px 30px;
+        border-radius: 50px;
+        font-weight: 600;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        transition: all 0.3s ease;
+    }
+
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 20px rgba(255, 255, 255, 0.3);
+    }
+
+    /* Dashboard Grid */
+    .dashboard-grid {
+        display: grid;
+        grid-template-columns: 2fr 1fr;
+        gap: 30px;
+    }
+
+    @media (max-width: 1200px) {
+        .dashboard-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    /* Cards */
+    .section-card {
+        background: white;
+        border-radius: 20px;
+        padding: 30px;
+        margin-bottom: 30px;
+        box-shadow: 0 5px 20px rgba(0, 0, 0, 0.05);
+        transition: transform 0.3s ease;
+    }
+
+    .card-elevated {
+        border: 1px solid #eaeaea;
+    }
+
+    .section-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    }
+
+    /* Section Headers */
+    .section-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 30px;
+    }
+
+    .section-title {
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: #2d3748;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .icon-primary {
+        color: #667eea;
+    }
+
+    .view-all-link {
+        color: #667eea;
+        text-decoration: none;
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        transition: gap 0.3s ease;
+    }
+
+    .view-all-link:hover {
+        gap: 10px;
+    }
+
+    /* Appointments */
+    .appointments-container {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    .appointment-card {
+        background: #f8fafc;
+        border-radius: 15px;
+        padding: 20px;
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        border-left: 4px solid #667eea;
+    }
+
+    .appointment-urgent {
+        border-left-color: #f56565;
+        background: #fff5f5;
+    }
+
+    .time-badge {
+        background: white;
+        padding: 8px 16px;
+        border-radius: 10px;
+        font-weight: 600;
+        color: #2d3748;
+        border: 2px solid #e2e8f0;
+        min-width: 100px;
+        text-align: center;
+        display: block;
+    }
+
+    .appointment-info {
+        flex: 1;
+    }
+
+    .patient-name {
+        font-size: 1.1rem;
+        font-weight: 600;
+        margin-bottom: 5px;
+        color: #2d3748;
+    }
+
+    .patient-id {
+        color: #718096;
+        font-size: 0.9rem;
+    }
+
+    .appointment-meta {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 10px;
+    }
+
+    /* Status Badges */
+    .status-badge {
+        padding: 6px 16px;
+        border-radius: 20px;
+        font-size: 0.85rem;
+        font-weight: 500;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .status-waiting {
+        background: #bee3f8;
+        color: #2c5282;
+    }
+
+    .status-completed {
+        background: #c6f6d5;
+        color: #276749;
+    }
+
+    .status-urgent {
+        background: #fed7d7;
+        color: #c53030;
+    }
+
+    .status-scheduled {
+        background: #e9d8fd;
+        color: #553c9a;
+    }
+
+    /* Quick Actions */
+    .actions-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 15px;
+    }
+
+    .action-card {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        padding: 20px;
+        background: #f8fafc;
+        border-radius: 15px;
+        text-decoration: none;
+        color: inherit;
+        border: 2px solid transparent;
+        transition: all 0.3s ease;
+    }
+
+    .card-hover:hover {
+        border-color: #667eea;
+        background: white;
+        transform: translateX(5px);
+    }
+
+    .action-icon {
+        width: 60px;
+        height: 60px;
+        border-radius: 15px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+        color: white;
+    }
+
+    .icon-bg-blue {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+
+    .icon-bg-green {
+        background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+    }
+
+    .icon-bg-purple {
+        background: linear-gradient(135deg, #9f7aea 0%, #805ad5 100%);
+    }
+
+    .icon-bg-orange {
+        background: linear-gradient(135deg, #ed8936 0%, #dd6b20 100%);
+    }
+
+    .action-content {
+        flex: 1;
+    }
+
+    .action-content h3 {
+        margin-bottom: 5px;
+        font-size: 1.1rem;
+        color: #2d3748;
+    }
+
+    .action-content p {
+        color: #718096;
+        font-size: 0.9rem;
+        margin: 0;
+    }
+
+    .action-arrow {
+        color: #a0aec0;
+    }
+
+    /* Clinic Info */
+    .clinic-logo {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #2d3748;
+        margin-bottom: 15px;
+    }
+
+    .clinic-logo i {
+        color: #667eea;
+        font-size: 2rem;
+    }
+
+    .clinic-description {
+        color: #718096;
+        margin-bottom: 25px;
+        padding-bottom: 20px;
+        border-bottom: 1px solid #e2e8f0;
+    }
+
+    .contact-info {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+    }
+
+    .contact-item {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+    }
+
+    .contact-item i {
+        color: #667eea;
+        font-size: 1.2rem;
+        width: 24px;
+    }
+
+    .contact-label {
+        display: block;
+        font-size: 0.85rem;
+        color: #718096;
+        margin-bottom: 2px;
+    }
+
+    .contact-value {
+        display: block;
+        font-weight: 500;
+        color: #2d3748;
+    }
+
+    /* Empty State */
+    .empty-state {
+        text-align: center;
+        padding: 50px 20px;
+    }
+
+    .empty-icon {
+        font-size: 4rem;
+        color: #cbd5e0;
+        margin-bottom: 20px;
+    }
+
+    .empty-state h3 {
+        color: #4a5568;
+        margin-bottom: 10px;
+    }
+
+    .empty-state p {
+        color: #a0aec0;
+        margin-bottom: 30px;
+    }
+
+    /* Buttons */
+    .btn-outline {
+        border: 2px solid #667eea;
+        color: #667eea;
+        background: transparent;
+        padding: 12px 24px;
+        border-radius: 50px;
+        font-weight: 500;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        transition: all 0.3s ease;
+    }
+
+    .btn-outline:hover {
+        background: #667eea;
+        color: white;
+    }
+
+    /* Responsive Design */
+    @media (max-width: 768px) {
+        .welcome-banner {
+            flex-direction: column;
+            text-align: center;
+            padding: 30px 20px;
+        }
+
+        .current-date {
+            margin: 0 auto 20px;
+        }
+
+        .doctor-profile {
+            flex-direction: column;
+            text-align: center;
+        }
+
+        .quick-stats {
+            justify-content: center;
+        }
+
+        .dashboard-content {
+            padding: 10px;
+        }
+
+        .section-card {
+            padding: 20px 15px;
+        }
+
+        .appointment-card {
+            flex-direction: column;
+            text-align: center;
+            gap: 15px;
+        }
+
+        .appointment-meta {
+            flex-direction: column;
+            gap: 15px;
+        }
+    }
+</style>
+
+<script>
+    const now = new Date();
+    const options = { 
+        weekday: 'long', 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+    };
+    document.getElementById('currentDate').textContent = now.toLocaleDateString('en-US', options);
+    
+    // Auto-refresh appointments every 5 minutes
+    setInterval(function() {
+        location.reload();
+    }, 300000); // 5 minutes
+</script>
+
+{% endblock %}

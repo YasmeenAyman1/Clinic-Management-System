@@ -1,52 +1,72 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - Clinic Management</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-</head>
-<body class="auth-page">
-    <div class="auth-container">
-        <div class="auth-header">
-            <h1><i class="fas fa-stethoscope"></i> Clinic Management System</h1>
-            <p>Sign in to your account</p>
-        </div>
-        
-        <div class="auth-card">
-            <form method="POST" action="{{ url_for('auth.login') }}">
-                <div class="form-group">
-                    <label for="username"><i class="fas fa-user"></i> Username</label>
-                    <input type="text" id="username" name="username" required placeholder="Enter your username">
+{% extends 'base.html' %}
+
+{% block title %}Login - Clinic Management{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6 col-lg-5">
+        <div class="card shadow-lg border-0 mt-5">
+            <div class="card-body p-5">
+                <div class="text-center mb-4">
+                    <i class="fas fa-stethoscope fa-3x text-primary mb-3"></i>
+                    <h2>Welcome Back</h2>
+                    <p class="text-muted">Sign in to your account</p>
                 </div>
-                
-                <div class="form-group">
-                    <label for="password"><i class="fas fa-lock"></i> Password</label>
-                    <input type="password" id="password" name="password" required placeholder="Enter your password">
+
+                <!-- Flash Messages -->
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ 'danger' if category == 'danger' else 'warning' if category == 'warning' else 'info' if category == 'info' else 'success' }} alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+
+                <form method="POST" action="{{ url_for('auth.login') }}">
+                    <!-- CSRF Token -->
+                    {% if session.get('csrf_token') %}
+                        <input type="hidden" name="csrf_token" value="{{ session.csrf_token }}">
+                    {% endif %}
+                    
+                    <div class="mb-3">
+                        <label for="email" class="form-label">
+                            <i class="fas fa-envelope"></i> Email Address
+                        </label>
+                        <input type="email" class="form-control form-control-lg" 
+                               id="email" name="email" required 
+                               placeholder="Enter your email">
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label for="password" class="form-label">
+                            <i class="fas fa-lock"></i> Password
+                        </label>
+                        <input type="password" class="form-control form-control-lg" 
+                               id="password" name="password" required 
+                               placeholder="Enter your password">
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary btn-lg w-100 mb-3">
+                        <i class="fas fa-sign-in-alt"></i> Sign In
+                    </button>
+                </form>
+
+                <hr>
+
+                <div class="text-center">
+                    <p class="mb-2">Don't have an account? 
+                        <a href="{{ url_for('auth.signup') }}" class="text-primary fw-bold">Sign up</a>
+                    </p>
+                    <a href="{{ url_for('home') }}" class="text-muted">
+                        <i class="fas fa-arrow-left"></i> Back to Home
+                    </a>
                 </div>
-                
-                <button type="submit" class="btn-primary">Sign In</button>
-            </form>
-            
-            <div class="auth-footer">
-                <p>Demo Accounts:</p>
-                <div class="demo-accounts">
-                    <div class="demo-account">
-                        <strong>Patient:</strong> patient1 / 123
-                    </div>
-                    <div class="demo-account">
-                        <strong>Doctor:</strong> doctor1 / 123
-                    </div>
-                    <div class="demo-account">
-                        <strong>Assistant:</strong> assistant1 / 123
-                    </div>
-                </div>
-                
-                <p class="signup-link">Don't have an account? <a href="{{ url_for('auth.signup') }}">Sign up</a></p>
-                <p class="home-link"><a href="{{ url_for('home') }}">Back to Home</a></p>
+
             </div>
         </div>
     </div>
-</body>
-</html>
+</div>
+{% endblock %}

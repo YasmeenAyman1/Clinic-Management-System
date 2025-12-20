@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!-- <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -8,7 +8,6 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body class="dashboard">
-    <!-- Sidebar -->
     <div class="sidebar">
         <div class="sidebar-header">
             <h2><i class="fas fa-stethoscope"></i> MediCare</h2>
@@ -42,9 +41,7 @@
         </nav>
     </div>
 
-    <!-- Main Content -->
     <div class="main-content">
-        <!-- Header -->
         <header class="dashboard-header">
             <h1>Patient Dashboard</h1>
             <div class="header-actions">
@@ -59,9 +56,7 @@
             </div>
         </header>
 
-        <!-- Dashboard Content -->
         <div class="dashboard-content">
-            <!-- Welcome Banner -->
             <div class="welcome-banner">
                 <div class="welcome-text">
                     <h2>Welcome, {{ session.user_name }}!</h2>
@@ -74,7 +69,6 @@
                 </div>
             </div>
 
-            <!-- Quick Stats -->
             <div class="stats-container">
                 <div class="stat-card">
                     <div class="stat-icon upcoming">
@@ -111,7 +105,6 @@
                 </div>
             </div>
 
-            <!-- Upcoming Appointments -->
             <div class="section-card">
                 <div class="section-header">
                     <h2><i class="fas fa-calendar-alt"></i> Upcoming Appointments</h2>
@@ -146,7 +139,6 @@
                 {% endif %}
             </div>
 
-            <!-- Recent Medical History -->
             <div class="section-card">
                 <div class="section-header">
                     <h2><i class="fas fa-history"></i> Recent Medical History</h2>
@@ -184,4 +176,86 @@
     </script>
 </body>
 </html>
+ -->
+{% extends "base.html" %}
+{% block title %}Patient Dashboard{% endblock %}
 
+{% block content %}
+<div class="row">
+    <div class="col-md-3">
+        <!-- Sidebar -->
+        <div class="list-group">
+            <a href="{{ url_for('patient_home') }}" class="list-group-item list-group-item-action active">Dashboard</a>
+            <a href="{{ url_for('patient.appointments') }}" class="list-group-item list-group-item-action">Appointments</a>
+            <a href="{{ url_for('patient.diagnosis') }}" class="list-group-item list-group-item-action">Medical History</a>
+            <a href="{{ url_for('patient.profile') }}" class="list-group-item list-group-item-action">Profile</a>
+            <a href="{{ url_for('auth.logout') }}" class="list-group-item list-group-item-action text-danger">Logout</a>
+        </div>
+    </div>
+
+    <div class="col-md-9">
+        <!-- Welcome -->
+        <div class="card mb-3">
+            <div class="card-body">
+                <h3>Welcome, {{ session.user_name }}!</h3>
+                <p>Manage your appointments and access medical records.</p>
+                <a href="{{ url_for('patient.appointments') }}" class="btn btn-primary">
+                    <i class="fas fa-calendar-plus"></i> Book Appointment
+                </a>
+            </div>
+        </div>
+
+        <!-- Stats -->
+        <div class="row mb-3">
+            <div class="col-md-4">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h5>Upcoming Appointments</h5>
+                        <h3>{{ appointments|selectattr('status', 'equalto', 'Upcoming')|list|length }}</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h5>Completed Visits</h5>
+                        <h3>{{ appointments|selectattr('status', 'equalto', 'Completed')|list|length }}</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h5>Medical Records</h5>
+                        <h3>{{ medical_history|length }}</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Upcoming Appointments -->
+        <div class="card mb-3">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="fas fa-calendar-alt"></i> Upcoming Appointments</span>
+                <a href="{{ url_for('patient.appointments') }}">View All</a>
+            </div>
+            <div class="card-body">
+                {% if appointments %}
+                    <ul class="list-group">
+                        {% for appointment in appointments if appointment.status == 'Upcoming' %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong>{{ appointment.doctor }}</strong> at {{ appointment.time }}
+                            </div>
+                            <span class="badge bg-success">{{ appointment.status }}</span>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                {% else %}
+                    <p>No upcoming appointments. <a href="{{ url_for('patient.appointments') }}">Book now</a></p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,5 +1,370 @@
 {% extends "base.html" %}
+
 {% block content %}
-<h2>About the Clinic</h2>
-<p>We provide professional medical services with experienced staff and a patient-centered approach.</p>
+<div class="container-fluid py-4">
+    <!-- Hero Section -->
+    <div class="row justify-content-center mb-5">
+        <div class="col-lg-10 text-center">
+            <h1 class="display-4 fw-bold text-primary mb-4">
+                <i class="fas fa-heartbeat me-3"></i>About MediCare Clinic
+            </h1>
+            <p class="lead text-muted mb-4">
+                Delivering exceptional healthcare with compassion, innovation, and excellence since 2010.
+            </p>
+            <div class="d-flex justify-content-center gap-3">
+                <span class="badge bg-primary p-2">14+ Years of Service</span>
+                <span class="badge bg-success p-2">50,000+ Patients Served</span>
+                <span class="badge bg-info p-2">Award-Winning Care</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mission & Vision -->
+    <div class="row g-4 mb-5">
+        <div class="col-lg-6">
+            <div class="card shadow border-0 h-100">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center mb-4">
+                        <div class="mission-icon bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-3" 
+                             style="width: 60px; height: 60px;">
+                            <i class="fas fa-bullseye fa-2x"></i>
+                        </div>
+                        <h3 class="card-title text-primary mb-0">Our Mission</h3>
+                    </div>
+                    <p class="card-text fs-5">
+                        To provide accessible, high-quality healthcare that improves the lives of our patients 
+                        through compassionate service, advanced medical technology, and personalized treatment plans.
+                    </p>
+                    <div class="mt-4">
+                        <h5 class="text-primary mb-3"><i class="fas fa-check-circle me-2"></i>Our Commitment</h5>
+                        <ul class="list-unstyled">
+                            <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Patient-Centered Care</li>
+                            <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Evidence-Based Medicine</li>
+                            <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Continuous Improvement</li>
+                            <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Community Health Advocacy</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-6">
+            <div class="card shadow border-0 h-100">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center mb-4">
+                        <div class="vision-icon bg-success text-white rounded-circle d-flex align-items-center justify-content-center me-3" 
+                             style="width: 60px; height: 60px;">
+                            <i class="fas fa-eye fa-2x"></i>
+                        </div>
+                        <h3 class="card-title text-success mb-0">Our Vision</h3>
+                    </div>
+                    <p class="card-text fs-5">
+                        To be the leading healthcare provider in our region, recognized for excellence in patient care, 
+                        medical innovation, and community health improvement, setting new standards in comprehensive healthcare.
+                    </p>
+                    <div class="mt-4">
+                        <h5 class="text-success mb-3"><i class="fas fa-star me-2"></i>Future Goals</h5>
+                        <ul class="list-unstyled">
+                            <li class="mb-2"><i class="fas fa-arrow-right text-info me-2"></i>Expand Telemedicine Services</li>
+                            <li class="mb-2"><i class="fas fa-arrow-right text-info me-2"></i>Community Health Programs</li>
+                            <li class="mb-2"><i class="fas fa-arrow-right text-info me-2"></i>Advanced Diagnostic Center</li>
+                            <li class="mb-2"><i class="fas fa-arrow-right text-info me-2"></i>Medical Research Initiatives</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Our Story -->
+    <div class="card shadow border-0 mb-5">
+        <div class="card-body p-4">
+            <div class="row align-items-center">
+                <div class="col-lg-8">
+                    <h2 class="text-primary mb-4">
+                        <i class="fas fa-history me-3"></i>Our Story
+                    </h2>
+                    <div class="timeline">
+                        <div class="timeline-item mb-4">
+                            <div class="timeline-marker bg-primary"></div>
+                            <div class="timeline-content">
+                                <h5 class="text-primary">2010 - Foundation</h5>
+                                <p>MediCare Clinic was founded by Dr. James Wilson with a vision to create a patient-centered healthcare facility that prioritizes compassionate care and medical excellence.</p>
+                            </div>
+                        </div>
+                        <div class="timeline-item mb-4">
+                            <div class="timeline-marker bg-success"></div>
+                            <div class="timeline-content">
+                                <h5 class="text-success">2014 - Expansion</h5>
+                                <p>Expanded our facility to include a state-of-the-art diagnostic center and added specialist services in cardiology, orthopedics, and pediatrics.</p>
+                            </div>
+                        </div>
+                        <div class="timeline-item mb-4">
+                            <div class="timeline-marker bg-info"></div>
+                            <div class="timeline-content">
+                                <h5 class="text-info">2018 - Accreditation</h5>
+                                <p>Achieved Joint Commission accreditation and implemented electronic health records system for improved patient care coordination.</p>
+                            </div>
+                        </div>
+                        <div class="timeline-item">
+                            <div class="timeline-marker bg-warning"></div>
+                            <div class="timeline-content">
+                                <h5 class="text-warning">2023 - Innovation</h5>
+                                <p>Launched telemedicine services and community health programs, serving over 50,000 patients with comprehensive healthcare solutions.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-4 text-center">
+                    <div class="stats-card bg-primary text-white rounded p-4 mb-4">
+                        <i class="fas fa-award fa-3x mb-3"></i>
+                        <h3 class="mb-2">14+ Years</h3>
+                        <p class="mb-0">of Excellence in Healthcare</p>
+                    </div>
+                    <div class="stats-card bg-success text-white rounded p-4">
+                        <i class="fas fa-users fa-3x mb-3"></i>
+                        <h3 class="mb-2">50,000+</h3>
+                        <p class="mb-0">Patients Trust Us</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Our Values -->
+    <div class="row mb-5">
+        <div class="col-12">
+            <h2 class="text-center text-primary mb-5">
+                <i class="fas fa-gem me-3"></i>Our Core Values
+            </h2>
+            <div class="row g-4">
+                <div class="col-md-3">
+                    <div class="card border-0 shadow-sm h-100 text-center">
+                        <div class="card-body p-4">
+                            <div class="value-icon bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-4" 
+                                 style="width: 80px; height: 80px;">
+                                <i class="fas fa-heart fa-2x"></i>
+                            </div>
+                            <h4 class="card-title text-primary">Compassion</h4>
+                            <p class="card-text text-muted">
+                                We treat every patient with empathy, respect, and understanding, creating a healing environment.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card border-0 shadow-sm h-100 text-center">
+                        <div class="card-body p-4">
+                            <div class="value-icon bg-success text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-4" 
+                                 style="width: 80px; height: 80px;">
+                                <i class="fas fa-star fa-2x"></i>
+                            </div>
+                            <h4 class="card-title text-success">Excellence</h4>
+                            <p class="card-text text-muted">
+                                We strive for the highest standards in medical care, technology, and patient service.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card border-0 shadow-sm h-100 text-center">
+                        <div class="card-body p-4">
+                            <div class="value-icon bg-info text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-4" 
+                                 style="width: 80px; height: 80px;">
+                                <i class="fas fa-lightbulb fa-2x"></i>
+                            </div>
+                            <h4 class="card-title text-info">Innovation</h4>
+                            <p class="card-text text-muted">
+                                We embrace new technologies and methods to provide cutting-edge healthcare solutions.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card border-0 shadow-sm h-100 text-center">
+                        <div class="card-body p-4">
+                            <div class="value-icon bg-warning text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-4" 
+                                 style="width: 80px; height: 80px;">
+                                <i class="fas fa-handshake fa-2x"></i>
+                            </div>
+                            <h4 class="card-title text-warning">Integrity</h4>
+                            <p class="card-text text-muted">
+                                We maintain the highest ethical standards in all our interactions and decisions.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Medical Team -->
+    <div class="card shadow border-0 mb-5">
+        <div class="card-body p-4">
+            <h2 class="text-center text-primary mb-5">
+                <i class="fas fa-user-md me-3"></i>Meet Our Medical Team
+            </h2>
+            <div class="row g-4">
+                <div class="col-md-4">
+                    <div class="team-card text-center">
+                        <div class="team-photo mb-3 mx-auto rounded-circle overflow-hidden" 
+                             style="width: 150px; height: 150px; background: linear-gradient(135deg, #4e73df, #6a5af9);">
+                            <div class="h-100 d-flex align-items-center justify-content-center">
+                                <i class="fas fa-user-md fa-4x text-white"></i>
+                            </div>
+                        </div>
+                        <h4 class="text-primary">Dr. James Wilson</h4>
+                        <p class="text-muted mb-2">Founder & Medical Director</p>
+                        <p class="small text-muted">Cardiology Specialist, 25+ years experience</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="team-card text-center">
+                        <div class="team-photo mb-3 mx-auto rounded-circle overflow-hidden" 
+                             style="width: 150px; height: 150px; background: linear-gradient(135deg, #1cc88a, #36b9cc);">
+                            <div class="h-100 d-flex align-items-center justify-content-center">
+                                <i class="fas fa-user-md fa-4x text-white"></i>
+                            </div>
+                        </div>
+                        <h4 class="text-success">Dr. Sarah Johnson</h4>
+                        <p class="text-muted mb-2">Head of Pediatrics</p>
+                        <p class="small text-muted">Pediatric Care, 15+ years experience</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="team-card text-center">
+                        <div class="team-photo mb-3 mx-auto rounded-circle overflow-hidden" 
+                             style="width: 150px; height: 150px; background: linear-gradient(135deg, #f6c23e, #e74a3b);">
+                            <div class="h-100 d-flex align-items-center justify-content-center">
+                                <i class="fas fa-user-md fa-4x text-white"></i>
+                            </div>
+                        </div>
+                        <h4 class="text-warning">Dr. Robert Chen</h4>
+                        <p class="text-muted mb-2">Orthopedic Surgeon</p>
+                        <p class="small text-muted">Sports Medicine, 20+ years experience</p>
+                    </div>
+                </div>
+            </div>
+            <div class="text-center mt-4">
+                <a href="{{ url_for('home') }}#services" class="btn btn-outline-primary">
+                    <i class="fas fa-users me-2"></i>View All Team Members
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Facilities & Technology -->
+    <div class="row g-4">
+        <div class="col-lg-8">
+            <div class="card shadow border-0 h-100">
+                <div class="card-body p-4">
+                    <h3 class="text-primary mb-4">
+                        <i class="fas fa-hospital-alt me-3"></i>Our Facilities
+                    </h3>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="d-flex align-items-start">
+                                <i class="fas fa-clinic-medical text-primary fa-lg me-3 mt-1"></i>
+                                <div>
+                                    <h6>Modern Examination Rooms</h6>
+                                    <p class="text-muted small mb-0">Comfortable, well-equipped rooms for consultations and examinations.</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="d-flex align-items-start">
+                                <i class="fas fa-x-ray text-success fa-lg me-3 mt-1"></i>
+                                <div>
+                                    <h6>Diagnostic Center</h6>
+                                    <p class="text-muted small mb-0">Advanced imaging and laboratory services for accurate diagnosis.</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="d-flex align-items-start">
+                                <i class="fas fa-procedures text-info fa-lg me-3 mt-1"></i>
+                                <div>
+                                    <h6>Minor Procedure Suite</h6>
+                                    <p class="text-muted small mb-0">Sterile environment for minor surgical procedures and treatments.</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="d-flex align-items-start">
+                                <i class="fas fa-pump-medical text-warning fa-lg me-3 mt-1"></i>
+                                <div>
+                                    <h6>Pharmacy Services</h6>
+                                    <p class="text-muted small mb-0">On-site pharmacy for convenient prescription filling.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card shadow border-0 h-100">
+                <div class="card-body p-4">
+                    <h3 class="text-primary mb-4">
+                        <i class="fas fa-microscope me-3"></i>Accreditations
+                    </h3>
+                    <div class="accreditation-list">
+                        <div class="d-flex align-items-center mb-3">
+                            <i class="fas fa-shield-alt text-success fa-2x me-3"></i>
+                            <div>
+                                <h6 class="mb-0">Joint Commission Accredited</h6>
+                                <small class="text-muted">Gold Seal of Approval</small>
+                            </div>
+                        </div>
+                        <div class="d-flex align-items-center mb-3">
+                            <i class="fas fa-award text-primary fa-2x me-3"></i>
+                            <div>
+                                <h6 class="mb-0">Patient Safety Excellence</h6>
+                                <small class="text-muted">5-Star Rating</small>
+                            </div>
+                        </div>
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-star text-warning fa-2x me-3"></i>
+                            <div>
+                                <h6 class="mb-0">Quality Healthcare Provider</h6>
+                                <small class="text-muted">Recognized Excellence</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- CTA Section -->
+    <div class="text-center mt-5">
+        <div class="card shadow border-0 bg-primary text-white">
+            <div class="card-body py-5">
+                <h2 class="mb-3">Ready to Experience Exceptional Care?</h2>
+                <p class="lead mb-4">Join thousands of satisfied patients who trust MediCare Clinic for their healthcare needs.</p>
+                <div class="d-flex justify-content-center gap-3">
+                    {% if session.get('username') %}
+                        <a href="{{ url_for('doctor.doctor_home') if session.get('role') == 'doctor' else url_for('patient.list_patients') }}" 
+                           class="btn btn-light btn-lg">
+                            <i class="fas fa-home me-2"></i>Go to Dashboard
+                        </a>
+                    {% else %}
+                        <a href="{{ url_for('auth.signup') }}" class="btn btn-light btn-lg">
+                            <i class="fas fa-user-plus me-2"></i>Register Now
+                        </a>
+                        <a href="{{ url_for('contact') }}" class="btn btn-outline-light btn-lg">
+                            <i class="fas fa-phone me-2"></i>Contact Us
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+<!-- Add Animate.css for animations -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+
 {% endblock %}

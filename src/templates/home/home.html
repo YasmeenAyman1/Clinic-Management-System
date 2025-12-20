@@ -1,182 +1,103 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Clinic Management System</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-</head>
-<body>
-    <!-- Navigation Bar -->
-    <nav class="navbar">
-        <div class="nav-container">
-            <div class="nav-brand">
-                <i class="fas fa-stethoscope"></i>
-                <span>MediCare Clinic</span>
-            </div>
-            <ul class="nav-menu">
-                <li><a href="#home" class="active">Home</a></li>
-                <li><a href="#about">About</a></li>
-                <li><a href="#services">Services</a></li>
-                <li><a href="#contact">Contact</a></li>
-                <li><a href="{{ url_for('auth.login') }}" class="btn-login">Login</a></li>
-                <li><a href="{{ url_for('auth.signup') }}" class="btn-signup">Sign Up</a></li>
-            </ul>
-            <div class="hamburger" id="hamburger">
-                <i class="fas fa-bars"></i>
-            </div>
-        </div>
-    </nav>
+{% extends 'base.html' %}
 
-    <!-- Hero Section -->
-    <section class="hero" id="home">
-        <div class="hero-container">
-            <div class="hero-content">
-                <h1>Professional Healthcare Management</h1>
-                <p>Streamline your clinic operations with our comprehensive management system. Efficient appointment scheduling, patient records, and medical history all in one place.</p>
-                <div class="hero-buttons">
-                    <a href="{{ url_for('auth.login') }}" class="btn-primary">Get Started</a>
-                    <a href="#services" class="btn-secondary">Learn More</a>
-                </div>
-            </div>
-            <div class="hero-image">
-                <img src="https://via.placeholder.com/500x400/4A6572/FFFFFF?text=Clinic+Management" alt="Clinic Management">
-            </div>
-        </div>
-    </section>
+{% block title %}Welcome - Clinic Management System{% endblock %}
 
-    <!-- Features Section -->
-    <section class="features" id="services">
-        <div class="section-header">
-            <h2>Our Features</h2>
-            <p>Everything you need to manage your clinic efficiently</p>
-        </div>
-        <div class="features-container">
-            <div class="feature-card">
-                <div class="feature-icon">
-                    <i class="fas fa-calendar-check"></i>
+{% block content %}
+<!-- Hero Section -->
+<div class="bg-primary text-white py-5 mb-5">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-md-6">
+                <h1 class="display-4 fw-bold">
+                    <i class="fas fa-heartbeat"></i> MediCare Clinic
+                </h1>
+                <p class="lead">Your Health, Our Priority</p>
+                <p>Professional healthcare management system for patients, doctors, and medical staff.</p>
+                <div class="mt-4">
+                    <a href="{{ url_for('auth.signup') }}" class="btn btn-light btn-lg me-2">
+                        <i class="fas fa-user-plus"></i> Get Started
+                    </a>
+                    <a href="{{ url_for('auth.login') }}" class="btn btn-outline-light btn-lg">
+                        <i class="fas fa-sign-in-alt"></i> Login
+                    </a>
                 </div>
-                <h3>Appointment Management</h3>
-                <p>Easy scheduling, rescheduling, and cancellation of patient appointments with real-time updates.</p>
             </div>
-            
-            <div class="feature-card">
-                <div class="feature-icon">
-                    <i class="fas fa-file-medical"></i>
-                </div>
-                <h3>Electronic Medical Records</h3>
-                <p>Secure digital storage of patient histories, diagnoses, treatments, and prescriptions.</p>
-            </div>
-            
-            <div class="feature-card">
-                <div class="feature-icon">
-                    <i class="fas fa-search"></i>
-                </div>
-                <h3>Patient Search</h3>
-                <p>Quickly find patient information with our advanced search functionality.</p>
-            </div>
-            
-            <div class="feature-card">
-                <div class="feature-icon">
-                    <i class="fas fa-user-md"></i>
-                </div>
-                <h3>Doctor Portal</h3>
-                <p>Doctors can access patient files, write prescriptions, and manage their schedules.</p>
+            <div class="col-md-6 text-center">
+                <i class="fas fa-hospital fa-10x"></i>
             </div>
         </div>
-    </section>
+    </div>
+</div>
 
-    <!-- User Roles Section -->
-    <section class="roles">
-        <div class="section-header">
-            <h2>User Roles</h2>
-            <p>Tailored interfaces for different users</p>
-        </div>
-        <div class="roles-container">
-            <div class="role-card">
-                <div class="role-icon patient">
-                    <i class="fas fa-user-injured"></i>
+<!-- Features Section -->
+<div class="container mb-5">
+    <h2 class="text-center mb-5">Our Services</h2>
+    <div class="row g-4">
+        <div class="col-md-4">
+            <div class="card h-100 shadow-sm border-0 text-center">
+                <div class="card-body">
+                    <i class="fas fa-calendar-check fa-4x text-primary mb-3"></i>
+                    <h4>Easy Appointment Booking</h4>
+                    <p class="text-muted">Book appointments with your preferred doctors quickly and easily online.</p>
                 </div>
-                <h3>Patients</h3>
-                <ul>
-                    <li>Book appointments online</li>
-                    <li>View medical history</li>
-                    <li>Access prescriptions</li>
-                    <li>Receive follow-up reminders</li>
-                </ul>
-            </div>
-            
-            <div class="role-card">
-                <div class="role-icon doctor">
-                    <i class="fas fa-user-md"></i>
-                </div>
-                <h3>Doctors</h3>
-                <ul>
-                    <li>Manage appointment schedule</li>
-                    <li>Access patient records</li>
-                    <li>Write prescriptions</li>
-                    <li>Add diagnoses & treatments</li>
-                </ul>
-            </div>
-            
-            <div class="role-card">
-                <div class="role-icon assistant">
-                    <i class="fas fa-user-nurse"></i>
-                </div>
-                <h3>Clinic Assistants</h3>
-                <ul>
-                    <li>Schedule appointments</li>
-                    <li>Manage patient information</li>
-                    <li>Handle billing</li>
-                    <li>Coordinate between patients and doctors</li>
-                </ul>
             </div>
         </div>
-    </section>
+        <div class="col-md-4">
+            <div class="card h-100 shadow-sm border-0 text-center">
+                <div class="card-body">
+                    <i class="fas fa-file-medical fa-4x text-success mb-3"></i>
+                    <h4>Medical Records</h4>
+                    <p class="text-muted">Access your complete medical history and diagnosis reports anytime.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card h-100 shadow-sm border-0 text-center">
+                <div class="card-body">
+                    <i class="fas fa-user-md fa-4x text-info mb-3"></i>
+                    <h4>Expert Doctors</h4>
+                    <p class="text-muted">Connect with experienced healthcare professionals in various specializations.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
-    <!-- Footer -->
-    <footer class="footer">
-        <div class="footer-container">
-            <div class="footer-section">
-                <h3>MediCare Clinic</h3>
-                <p>Providing quality healthcare management solutions since 2024.</p>
-                <div class="social-icons">
-                    <a href="#"><i class="fab fa-facebook"></i></a>
-                    <a href="#"><i class="fab fa-twitter"></i></a>
-                    <a href="#"><i class="fab fa-linkedin"></i></a>
-                    <a href="#"><i class="fab fa-instagram"></i></a>
-                </div>
+<!-- Why Choose Us Section -->
+<div class="bg-light py-5 mb-5">
+    <div class="container">
+        <h2 class="text-center mb-5">Why Choose MediCare?</h2>
+        <div class="row">
+            <div class="col-md-3 text-center mb-4">
+                <i class="fas fa-clock fa-3x text-primary mb-3"></i>
+                <h5>24/7 Support</h5>
+                <p class="text-muted">Round the clock medical assistance</p>
             </div>
-            
-            <div class="footer-section">
-                <h3>Quick Links</h3>
-                <ul>
-                    <li><a href="#home">Home</a></li>
-                    <li><a href="#about">About</a></li>
-                    <li><a href="#services">Services</a></li>
-                    <li><a href="#contact">Contact</a></li>
-                </ul>
+            <div class="col-md-3 text-center mb-4">
+                <i class="fas fa-shield-alt fa-3x text-success mb-3"></i>
+                <h5>Secure & Private</h5>
+                <p class="text-muted">Your data is safe with us</p>
             </div>
-            
-            <div class="footer-section">
-                <h3>Contact Us</h3>
-                <p><i class="fas fa-map-marker-alt"></i> 123 Medical Street, Health City</p>
-                <p><i class="fas fa-phone"></i> (123) 456-7890</p>
-                <p><i class="fas fa-envelope"></i> info@medicareclinic.com</p>
+            <div class="col-md-3 text-center mb-4">
+                <i class="fas fa-star fa-3x text-warning mb-3"></i>
+                <h5>Quality Care</h5>
+                <p class="text-muted">Best in class healthcare</p>
+            </div>
+            <div class="col-md-3 text-center mb-4">
+                <i class="fas fa-mobile-alt fa-3x text-info mb-3"></i>
+                <h5>Easy Access</h5>
+                <p class="text-muted">Manage health from anywhere</p>
             </div>
         </div>
-        <div class="footer-bottom">
-            <p>&copy; 2024 MediCare Clinic Management System. All rights reserved.</p>
-        </div>
-    </footer>
+    </div>
+</div>
 
-    <script>
-        // Mobile menu toggle
-        document.getElementById('hamburger').addEventListener('click', function() {
-            document.querySelector('.nav-menu').classList.toggle('show');
-        });
-    </script>
-</body>
-</html>
-
+<!-- Call to Action -->
+<div class="container text-center py-5">
+    <h2 class="mb-4">Ready to Get Started?</h2>
+    <p class="lead mb-4">Join thousands of satisfied patients managing their health with MediCare</p>
+    <a href="{{ url_for('auth.signup') }}" class="btn btn-primary btn-lg">
+        <i class="fas fa-user-plus"></i> Create Your Account Now
+    </a>
+</div>
+{% endblock %}

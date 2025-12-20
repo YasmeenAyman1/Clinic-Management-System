@@ -1,0 +1,426 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header Section -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h2 fw-bold text-primary">
+                <i class="fas fa-search me-2"></i>
+                Search Patients
+            </h1>
+            <p class="text-muted mb-0">Search for patient records by name, phone number, or ID</p>
+        </div>
+        <div>
+            <a href="{{ url_for('doctor.manage_patients') }}" class="btn btn-outline-primary">
+                <i class="fas fa-list me-2"></i>View All Patients
+            </a>
+            <a href="{{ url_for('doctor.doctor_home') }}" class="btn btn-outline-secondary ms-2">
+                <i class="fas fa-home me-2"></i>Dashboard
+            </a>
+        </div>
+    </div>
+
+    <!-- Search Form -->
+    <div class="card shadow mb-4">
+        <div class="card-body">
+            <form method="GET" action="{{ url_for('doctor.search_patient') }}" class="row g-3">
+                <div class="col-md-10">
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="fas fa-search"></i></span>
+                        <input type="text" class="form-control form-control-lg" 
+                               name="search" placeholder="Search by name, phone, or patient ID..." 
+                               value="{{ search_query }}" autofocus>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary btn-lg w-100">
+                        <i class="fas fa-search me-2"></i>Search
+                    </button>
+                </div>
+            </form>
+            
+            <div class="mt-3">
+                <small class="text-muted">
+                    <i class="fas fa-info-circle me-1"></i>
+                    Tip: You can search by patient's first name, last name, phone number, or patient ID (e.g., "PAT001")
+                </small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Search Results -->
+    {% if search_query %}
+    <div class="card shadow">
+        <div class="card-header">
+            <h5 class="mb-0">
+                <i class="fas fa-users me-2"></i>
+                Search Results for "{{ search_query }}"
+                <span class="badge bg-primary ms-2">{{ patients|length }} found</span>
+            </h5>
+        </div>
+        <div class="card-body">
+            {% if patients and patients|length > 0 %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Patient ID</th>
+                            <th>Name</th>
+                            <th>Contact</th>
+                            <th>Gender</th>
+                            <th>Date of Birth</th>
+                            <th>Medical Records</th>
+                            <th>Last Visit</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for patient in patients %}
+                        <tr>
+                            <td><span class="badge bg-light text-dark">#PAT{{ "%03d" % patient.id }}</span></td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    {% set initials = patient.firstName[0] + patient.lastName[0] if patient.firstName and patient.lastName else '??' %}
+                                    <div class="rounded-circle 
+                                        {% if patient.gender|lower == 'male' %}bg-primary
+                                        {% elif patient.gender|lower == 'female' %}bg-danger
+                                        {% else %}bg-secondary{% endif %}
+                                        text-white d-flex align-items-center justify-content-center me-3" 
+                                         style="width: 40px; height: 40px;">
+                                        <span>{{ initials|upper }}</span>
+                                    </div>
+                                    <div>
+                                        <h6 class="mb-0">{{ patient.firstName }} {{ patient.lastName }}</h6>
+                                        <small class="text-muted">
+                                            {% if patient.birth_date %}
+                                                {{ calculate_age(patient.birth_date) }} years old
+                                            {% else %}
+                                                Age not specified
+                                            {% endif %}
+                                        </small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <div>{{ patient.phone }}</div>
+                                {% if patient.address %}
+                                    <small class="text-muted">{{ patient.address[:30] }}{% if patient.address|length > 30 %}...{% endif %}</small>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if patient.gender|lower == 'male' %}
+                                    <i class="fas fa-mars text-primary me-1"></i> Male
+                                {% elif patient.gender|lower == 'female' %}
+                                    <i class="fas fa-venus text-danger me-1"></i> Female
+                                {% else %}
+                                    <i class="fas fa-genderless text-secondary me-1"></i> Other
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if patient.birth_date %}
+                                    <div>{{ patient.birth_date }}</div>
+                                    <small class="text-muted">{{ calculate_age(patient.birth_date) }} years</small>
+                                {% else %}
+                                    <span class="text-muted">Not specified</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge 
+                                    {% if patient_records_count.get(patient.id, 0) > 0 %}bg-info
+                                    {% else %}bg-secondary{% endif %}">
+                                    {{ patient_records_count.get(patient.id, 0) }} records
+                                </span>
+                            </td>
+                            <td>
+                                {% set last_visit = patient_last_visits.get(patient.id) %}
+                                {% if last_visit %}
+                                    <span class="text-muted">{{ last_visit }}</span>
+                                {% else %}
+                                    <span class="text-muted">No visits</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    <a href="{{ url_for('doctor.medical_file', pid=patient.id) }}" 
+                                       class="btn btn-outline-primary" title="View Medical File">
+                                        <i class="fas fa-file-medical"></i>
+                                    </a>
+                                    <a href="#" class="btn btn-outline-info" title="View Details"
+                                       data-bs-toggle="modal" data-bs-target="#patientDetailsModal{{ patient.id }}">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <a href="#" class="btn btn-outline-warning" title="Schedule Appointment">
+                                        <i class="fas fa-calendar-plus"></i>
+                                    </a>
+                                </div>
+                                
+                                <!-- Patient Details Modal -->
+                                <div class="modal fade" id="patientDetailsModal{{ patient.id }}" tabindex="-1" 
+                                     aria-labelledby="patientDetailsModalLabel{{ patient.id }}" aria-hidden="true">
+                                    <div class="modal-dialog modal-lg">
+                                        <div class="modal-content">
+                                            <div class="modal-header">
+                                                <h5 class="modal-title" id="patientDetailsModalLabel{{ patient.id }}">
+                                                    <i class="fas fa-user me-2"></i>
+                                                    Patient Details: {{ patient.firstName }} {{ patient.lastName }}
+                                                </h5>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                            </div>
+                                            <div class="modal-body">
+                                                <!-- Same patient details modal as in manage_patients.html -->
+                                                <div class="row mb-3">
+                                                    <div class="col-md-8">
+                                                        <div class="d-flex align-items-center">
+                                                            <div class="rounded-circle 
+                                                                {% if patient.gender|lower == 'male' %}bg-primary
+                                                                {% elif patient.gender|lower == 'female' %}bg-danger
+                                                                {% else %}bg-secondary{% endif %}
+                                                                text-white d-flex align-items-center justify-content-center me-3" 
+                                                                 style="width: 60px; height: 60px;">
+                                                                <span style="font-size: 18px;">
+                                                                    {% if patient.firstName and patient.lastName %}
+                                                                        {{ patient.firstName[0] }}{{ patient.lastName[0] }}
+                                                                    {% else %}
+                                                                        ??
+                                                                    {% endif %}
+                                                                </span>
+                                                            </div>
+                                                            <div>
+                                                                <h4 class="mb-1">{{ patient.firstName }} {{ patient.lastName }}</h4>
+                                                                <p class="text-muted mb-0">Patient ID: #PAT{{ "%03d" % patient.id }}</p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-4 text-end">
+                                                        <span class="badge bg-secondary p-2">
+                                                            Searched Patient
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                                
+                                                <div class="row">
+                                                    <div class="col-md-6">
+                                                        <div class="card border-0 bg-light">
+                                                            <div class="card-body">
+                                                                <h6 class="text-primary mb-3"><i class="fas fa-info-circle me-2"></i>Personal Information</h6>
+                                                                <p><strong>Full Name:</strong> {{ patient.firstName }} {{ patient.lastName }}</p>
+                                                                <p><strong>Gender:</strong> {{ patient.gender|title }}</p>
+                                                                <p><strong>Date of Birth:</strong> 
+                                                                    {% if patient.birth_date %}
+                                                                        {{ patient.birth_date }} 
+                                                                        <span class="text-muted">({{ calculate_age(patient.birth_date) }} years)</span>
+                                                                    {% else %}
+                                                                        <span class="text-muted">Not specified</span>
+                                                                    {% endif %}
+                                                                </p>
+                                                                <p><strong>Phone:</strong> {{ patient.phone }}</p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <div class="card border-0 bg-light">
+                                                            <div class="card-body">
+                                                                <h6 class="text-primary mb-3"><i class="fas fa-address-card me-2"></i>Contact Information</h6>
+                                                                <p><strong>Address:</strong> {{ patient.address or 'Not specified' }}</p>
+                                                                <p><strong>Registration Date:</strong> 
+                                                                    {% if patient.create_at %}
+                                                                        {% if patient.create_at is string %}
+                                                                            {{ patient.create_at[:10] }}
+                                                                        {% else %}
+                                                                            {{ patient.create_at.strftime('%Y-%m-%d') }}
+                                                                        {% endif %}
+                                                                    {% else %}
+                                                                        Not available
+                                                                    {% endif %}
+                                                                </p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                
+                                                <hr>
+                                                
+                                                <div class="row">
+                                                    <div class="col-12">
+                                                        <h6 class="text-primary mb-3"><i class="fas fa-clipboard-list me-2"></i>Medical Summary</h6>
+                                                        <div class="row">
+                                                            <div class="col-md-6">
+                                                                <div class="text-center p-3 border rounded">
+                                                                    <div class="h4 mb-0">{{ patient_records_count.get(patient.id, 0) }}</div>
+                                                                    <small class="text-muted">Medical Records</small>
+                                                                </div>
+                                                            </div>
+                                                            <div class="col-md-6">
+                                                                <div class="p-3 border rounded">
+                                                                    <strong>Last Visit:</strong> 
+                                                                    {% set last_visit = patient_last_visits.get(patient.id) %}
+                                                                    {% if last_visit %}
+                                                                        {% if last_visit is string %}
+                                                                            {{ last_visit }}
+                                                                        {% else %}
+                                                                            {{ last_visit.strftime('%Y-%m-%d') }}
+                                                                        {% endif %}
+                                                                    {% else %}
+                                                                        <span class="text-muted">No visits recorded</span>
+                                                                    {% endif %}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <a href="{{ url_for('doctor.medical_file', pid=patient.id) }}" 
+                                                   class="btn btn-primary">
+                                                    <i class="fas fa-file-medical me-2"></i>View Medical File
+                                                </a>
+                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-search fa-4x text-muted mb-3"></i>
+                <h4 class="text-muted">No Patients Found</h4>
+                <p class="text-muted">No patients match your search for "{{ search_query }}"</p>
+                <p class="text-muted">Try searching with different terms:</p>
+                <ul class="list-inline">
+                    <li class="list-inline-item"><span class="badge bg-light text-dark">Full name</span></li>
+                    <li class="list-inline-item"><span class="badge bg-light text-dark">First name</span></li>
+                    <li class="list-inline-item"><span class="badge bg-light text-dark">Last name</span></li>
+                    <li class="list-inline-item"><span class="badge bg-light text-dark">Phone number</span></li>
+                    <li class="list-inline-item"><span class="badge bg-light text-dark">Patient ID</span></li>
+                </ul>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% elif request.method == 'GET' and not search_query %}
+    <!-- Initial state - show search tips -->
+    <div class="card shadow">
+        <div class="card-body">
+            <div class="text-center py-5">
+                <i class="fas fa-search fa-4x text-muted mb-3"></i>
+                <h4 class="text-muted">Start Your Search</h4>
+                <p class="text-muted">Enter a search term above to find patients</p>
+                
+                <div class="row mt-4">
+                    <div class="col-md-3 mb-3">
+                        <div class="card border-0 bg-light h-100">
+                            <div class="card-body text-center">
+                                <i class="fas fa-user fa-2x text-primary mb-2"></i>
+                                <h6>Search by Name</h6>
+                                <small class="text-muted">Full name, first name, or last name</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <div class="card border-0 bg-light h-100">
+                            <div class="card-body text-center">
+                                <i class="fas fa-phone fa-2x text-success mb-2"></i>
+                                <h6>Search by Phone</h6>
+                                <small class="text-muted">Phone number or partial number</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <div class="card border-0 bg-light h-100">
+                            <div class="card-body text-center">
+                                <i class="fas fa-id-card fa-2x text-warning mb-2"></i>
+                                <h6>Search by ID</h6>
+                                <small class="text-muted">Patient ID (e.g., 001, 123)</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <div class="card border-0 bg-light h-100">
+                            <div class="card-body text-center">
+                                <i class="fas fa-calendar-alt fa-2x text-info mb-2"></i>
+                                <h6>Quick Actions</h6>
+                                <small class="text-muted">View all patients or go to dashboard</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mt-4">
+                    <h6 class="text-primary mb-3">Recent Patients</h6>
+                    {% set recent_patients = patient_repo.get_all_patients()[:5] if patient_repo.get_all_patients else [] %}
+                    {% if recent_patients %}
+                    <div class="row">
+                        {% for patient in recent_patients[:4] %}
+                        <div class="col-md-3 mb-3">
+                            <div class="card border h-100">
+                                <div class="card-body text-center">
+                                    <div class="rounded-circle bg-primary text-white d-inline-flex align-items-center justify-content-center mb-2" 
+                                         style="width: 50px; height: 50px;">
+                                        <span>{{ patient.firstName[0] }}{{ patient.lastName[0] }}</span>
+                                    </div>
+                                    <h6 class="mb-1">{{ patient.firstName }} {{ patient.lastName }}</h6>
+                                    <small class="text-muted">ID: #PAT{{ "%03d" % patient.id }}</small>
+                                    <div class="mt-2">
+                                        <a href="{{ url_for('doctor.medical_file', pid=patient.id) }}" 
+                                           class="btn btn-sm btn-outline-primary">
+                                            View File
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+    // Auto-focus search input
+    document.addEventListener('DOMContentLoaded', function() {
+        const searchInput = document.querySelector('input[name="search"]');
+        if (searchInput) {
+            searchInput.focus();
+            // Move cursor to end
+            if (searchInput.value) {
+                searchInput.setSelectionRange(searchInput.value.length, searchInput.value.length);
+            }
+        }
+        
+        // Clear search button
+        const clearBtn = document.createElement('button');
+        clearBtn.type = 'button';
+        clearBtn.className = 'btn btn-outline-secondary';
+        clearBtn.innerHTML = '<i class="fas fa-times"></i>';
+        clearBtn.style.position = 'absolute';
+        clearBtn.style.right = '10px';
+        clearBtn.style.top = '50%';
+        clearBtn.style.transform = 'translateY(-50%)';
+        clearBtn.style.zIndex = '10';
+        clearBtn.style.display = searchInput.value ? 'block' : 'none';
+        
+        clearBtn.addEventListener('click', function() {
+            searchInput.value = '';
+            searchInput.focus();
+            this.style.display = 'none';
+        });
+        
+        searchInput.parentElement.style.position = 'relative';
+        searchInput.parentElement.appendChild(clearBtn);
+        
+        searchInput.addEventListener('input', function() {
+            clearBtn.style.display = this.value ? 'block' : 'none';
+        });
+    });
+</script>
+{% endblock %}

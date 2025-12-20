@@ -2,7 +2,7 @@
 {% block content %}
 <h2>Search Patient</h2>
 
-<form method="post" action="{{ url_for('assistant.search') }}">
+<form method="post" action="{{ url_for('assistant.search_patient') }}">
     <input class="input-box" name="query" placeholder="Enter name or ID">
     <button class="button" type="submit">Search</button>
 </form>

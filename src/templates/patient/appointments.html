@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>My Appointments</h2>
+{% if appointments %}
+<table>
+  <tr><th>Date</th><th>Time</th><th>Doctor</th><th>Status</th><th>Actions</th></tr>
+  {% for appt in appointments %}
+  <tr>
+    <td>{{ appt.date }}</td>
+    <td>{{ appt.time }}</td>
+    <td>{{ appt.doctor }}</td>
+    <td>{{ appt.status }}</td>
+    <td>
+      {% if appt.status == 'Upcoming' %}
+        <a href="{{ url_for('patient.cancel_appointment', id=appt.id) }}">Cancel</a>
+      {% endif %}
+    </td>
+  </tr>
+  {% endfor %}
+</table>
+{% else %}
+<p>No appointments found. <a href="{{ url_for('patient.book_appointment') }}">Book now</a></p>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,683 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header Section -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h2 fw-bold text-primary">
+                <i class="fas fa-calendar-alt me-2"></i>
+                My Schedule & Availability
+            </h1>
+            <p class="text-muted mb-0">Manage your schedule and availability for appointments</p>
+        </div>
+        <div>
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addAvailabilityModal">
+                <i class="fas fa-plus-circle me-2"></i>Add Availability
+            </button>
+            <button class="btn btn-outline-primary ms-2" data-bs-toggle="modal" data-bs-target="#viewAppointmentsModal">
+                <i class="fas fa-list me-2"></i>View All Appointments
+            </button>
+        </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs fw-bold text-primary text-uppercase mb-1">
+                                Today's Appointments
+                            </div>
+                            <div class="h5 mb-0 fw-bold text-gray-800">{{ today_appointments_count }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-calendar-day fa-2x text-primary"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs fw-bold text-success text-uppercase mb-1">
+                                Upcoming This Week
+                            </div>
+                            <div class="h5 mb-0 fw-bold text-gray-800">{{ week_appointments_count }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-calendar-week fa-2x text-success"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs fw-bold text-warning text-uppercase mb-1">
+                                Available Slots
+                            </div>
+                            <div class="h5 mb-0 fw-bold text-gray-800">{{ available_slots_count }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-clock fa-2x text-warning"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs fw-bold text-info text-uppercase mb-1">
+                                Pending Approvals
+                            </div>
+                            <div class="h5 mb-0 fw-bold text-gray-800">{{ pending_appointments_count }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-hourglass-half fa-2x text-info"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Schedule Tabs -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <ul class="nav nav-tabs card-header-tabs" id="scheduleTab" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="weekly-tab" data-bs-toggle="tab" data-bs-target="#weekly" type="button" role="tab">
+                        <i class="fas fa-calendar-week me-2"></i>Weekly View
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="availability-tab" data-bs-toggle="tab" data-bs-target="#availability" type="button" role="tab">
+                        <i class="fas fa-clock me-2"></i>Availability
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="appointments-tab" data-bs-toggle="tab" data-bs-target="#appointments" type="button" role="tab">
+                        <i class="fas fa-list me-2"></i>All Appointments
+                    </button>
+                </li>
+            </ul>
+        </div>
+        <div class="card-body">
+            <div class="tab-content" id="scheduleTabContent">
+                
+                <!-- Weekly View Tab -->
+                <div class="tab-pane fade show active" id="weekly" role="tabpanel">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="mb-0">This Week's Schedule</h5>
+                        <div>
+                            <button class="btn btn-sm btn-outline-secondary" id="prevWeek">
+                                <i class="fas fa-chevron-left"></i>
+                            </button>
+                            <span class="mx-2" id="currentWeekRange"></span>
+                            <button class="btn btn-sm btn-outline-secondary" id="nextWeek">
+                                <i class="fas fa-chevron-right"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="table-responsive">
+                        <table class="table table-bordered" id="weeklySchedule">
+                            <thead>
+                                <tr class="bg-light">
+                                    <th style="width: 14%">Time</th>
+                                    <th style="width: 14%">Monday<br><span id="mondayDate" class="text-muted small"></span></th>
+                                    <th style="width: 14%">Tuesday<br><span id="tuesdayDate" class="text-muted small"></span></th>
+                                    <th style="width: 14%">Wednesday<br><span id="wednesdayDate" class="text-muted small"></span></th>
+                                    <th style="width: 14%">Thursday<br><span id="thursdayDate" class="text-muted small"></span></th>
+                                    <th style="width: 14%">Friday<br><span id="fridayDate" class="text-muted small"></span></th>
+                                    <th style="width: 14%">Saturday<br><span id="saturdayDate" class="text-muted small"></span></th>
+                                </tr>
+                            </thead>
+                            <tbody id="weeklyScheduleBody">
+                                <!-- Will be populated by JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <div class="mt-3">
+                        <h6 class="text-primary mb-2"><i class="fas fa-key me-2"></i>Legend</h6>
+                        <div class="d-flex flex-wrap gap-2">
+                            <span class="badge bg-success p-2"><i class="fas fa-check-circle me-1"></i>Available</span>
+                            <span class="badge bg-primary p-2"><i class="fas fa-calendar-check me-1"></i>Booked</span>
+                            <span class="badge bg-warning p-2"><i class="fas fa-hourglass-half me-1"></i>Pending</span>
+                            <span class="badge bg-secondary p-2"><i class="fas fa-times-circle me-1"></i>Not Available</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Availability Tab -->
+                <div class="tab-pane fade" id="availability" role="tabpanel">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="mb-0">Manage Your Availability</h5>
+                        <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#addAvailabilityModal">
+                            <i class="fas fa-plus me-1"></i>Add New
+                        </button>
+                    </div>
+                    
+                    {% if availability and availability|length > 0 %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Day</th>
+                                    <th>Time Slot</th>
+                                    <th>Duration</th>
+                                    <th>Status</th>
+                                    <th>Booked Appointments</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for slot in availability %}
+                                <tr>
+                                    <td>{{ slot.date }}</td>
+                                    <td>
+                                        {% set day_name = slot.date|get_day_name %}
+                                        {{ day_name }}
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-light text-dark">{{ slot.start_time }} - {{ slot.end_time }}</span>
+                                    </td>
+                                    <td>
+                                        {% set duration = (slot.end_time|time_to_minutes - slot.start_time|time_to_minutes) %}
+                                        {{ duration }} minutes
+                                    </td>
+                                    <td>
+                                        {% set is_past = slot.date|is_past_date %}
+                                        {% if is_past %}
+                                            <span class="badge bg-secondary">Past</span>
+                                        {% else %}
+                                            <span class="badge bg-success">Active</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% set booked_count = slot.appointments_count if slot.appointments_count else 0 %}
+                                        <span class="badge {% if booked_count > 0 %}bg-primary{% else %}bg-light text-dark{% endif %}">
+                                            {{ booked_count }} booked
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <button class="btn btn-outline-danger" 
+                                                    onclick="deleteAvailability({{ slot.id }})"
+                                                    {% if booked_count > 0 %}disabled title="Cannot delete slot with appointments"{% endif %}>
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-clock fa-4x text-muted mb-3"></i>
+                        <h4 class="text-muted">No Availability Set</h4>
+                        <p class="text-muted">You haven't set any availability slots yet.</p>
+                        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addAvailabilityModal">
+                            <i class="fas fa-plus-circle me-2"></i>Add Your First Availability Slot
+                        </button>
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <!-- Appointments Tab -->
+                <div class="tab-pane fade" id="appointments" role="tabpanel">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="mb-0">All Appointments</h5>
+                        <div class="d-flex">
+                            <div class="input-group input-group-sm me-2" style="width: 200px;">
+                                <input type="date" class="form-control" id="filterDate" value="{{ today }}">
+                                <button class="btn btn-outline-secondary" type="button" onclick="filterByDate()">
+                                    <i class="fas fa-filter"></i>
+                                </button>
+                            </div>
+                            <div class="dropdown">
+                                <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" 
+                                        data-bs-toggle="dropdown" aria-expanded="false">
+                                    <i class="fas fa-filter me-1"></i>Filter Status
+                                </button>
+                                <ul class="dropdown-menu">
+                                    <li><a class="dropdown-item" href="#" onclick="filterByStatus('all')">All Appointments</a></li>
+                                    <li><a class="dropdown-item" href="#" onclick="filterByStatus('pending')">Pending Approval</a></li>
+                                    <li><a class="dropdown-item" href="#" onclick="filterByStatus('confirmed')">Confirmed</a></li>
+                                    <li><a class="dropdown-item" href="#" onclick="filterByStatus('completed')">Completed</a></li>
+                                    <li><a class="dropdown-item" href="#" onclick="filterByStatus('cancelled')">Cancelled</a></li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {% if appointments and appointments|length > 0 %}
+                    <div class="table-responsive">
+                        <table class="table table-hover" id="appointmentsTable">
+                            <thead>
+                                <tr>
+                                    <th>Date & Time</th>
+                                    <th>Patient</th>
+                                    <th>Contact</th>
+                                    <th>Type</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for appointment in appointments %}
+                                <tr>
+                                    <td>
+                                        <div><strong>{{ appointment.date }}</strong></div>
+                                        <div class="text-muted small">{{ appointment.appointment_time }}</div>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center me-2" 
+                                                 style="width: 32px; height: 32px;">
+                                                {% if appointment.patient %}
+                                                    {{ appointment.patient.firstName[0] }}{{ appointment.patient.lastName[0] }}
+                                                {% else %}
+                                                    ??
+                                                {% endif %}
+                                            </div>
+                                            <div>
+                                                <div>{{ appointment.patient.firstName }} {{ appointment.patient.lastName }}</div>
+                                                <div class="text-muted small">ID: #PAT{{ "%03d" % appointment.patient_id }}</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div>{{ appointment.patient.phone }}</div>
+                                        <div class="text-muted small">
+                                            {% if appointment.patient.email %}
+                                                {{ appointment.patient.email }}
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="badge 
+                                            {% if appointment.type == 'followup' %}bg-info
+                                            {% elif appointment.type == 'emergency' %}bg-danger
+                                            {% else %}bg-secondary{% endif %}">
+                                            {{ appointment.type|default('Regular', true)|title }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="badge 
+                                            {% if appointment.status == 'confirmed' or appointment.status == 'approved' %}bg-success
+                                            {% elif appointment.status == 'pending' %}bg-warning
+                                            {% elif appointment.status == 'completed' %}bg-info
+                                            {% elif appointment.status == 'cancelled' or appointment.status == 'rejected' %}bg-danger
+                                            {% else %}bg-secondary{% endif %}">
+                                            {{ appointment.status|title }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            {% if appointment.status == 'pending' %}
+                                            <button class="btn btn-outline-success" onclick="approveAppointment({{ appointment.id }})">
+                                                <i class="fas fa-check"></i> Approve
+                                            </button>
+                                            <button class="btn btn-outline-danger" onclick="rejectAppointment({{ appointment.id }})">
+                                                <i class="fas fa-times"></i> Reject
+                                            </button>
+                                            {% endif %}
+                                            <a href="{{ url_for('doctor.medical_file', pid=appointment.patient_id) }}" 
+                                               class="btn btn-outline-primary" title="View Patient File">
+                                                <i class="fas fa-file-medical"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-calendar-check fa-4x text-muted mb-3"></i>
+                        <h4 class="text-muted">No Appointments</h4>
+                        <p class="text-muted">You don't have any appointments scheduled.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Availability Modal -->
+<div class="modal fade" id="addAvailabilityModal" tabindex="-1" aria-labelledby="addAvailabilityModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addAvailabilityModalLabel">
+                    <i class="fas fa-plus-circle me-2"></i>Add Availability Slot
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="{{ url_for('doctor.add_availability') }}" method="POST" id="addAvailabilityForm">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="availabilityDate" class="form-label">Date *</label>
+                        <input type="date" class="form-control" id="availabilityDate" name="date" required 
+                               min="{{ today }}" value="{{ today }}">
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="startTime" class="form-label">Start Time *</label>
+                            <input type="time" class="form-control" id="startTime" name="start_time" 
+                                   value="09:00" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="endTime" class="form-label">End Time *</label>
+                            <input type="time" class="form-control" id="endTime" name="end_time" 
+                                   value="17:00" required>
+                        </div>
+                    </div>
+                    <div class="alert alert-info">
+                        <small>
+                            <i class="fas fa-info-circle me-1"></i>
+                            This will create a time slot where patients can book appointments.
+                            Standard appointment duration is 30 minutes.
+                        </small>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Availability</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Initialize current date
+    const today = new Date();
+    
+    // Weekly schedule functionality
+    function generateWeeklySchedule(startDate) {
+        const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+        const scheduleBody = document.getElementById('weeklyScheduleBody');
+        const timeSlots = [];
+        
+        // Generate time slots (9 AM to 5 PM, 30-minute intervals)
+        for (let hour = 9; hour < 17; hour++) {
+            for (let minute = 0; minute < 60; minute += 30) {
+                const time = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+                timeSlots.push(time);
+            }
+        }
+        
+        // Generate table rows
+        scheduleBody.innerHTML = '';
+        timeSlots.forEach(time => {
+            const row = document.createElement('tr');
+            const timeCell = document.createElement('td');
+            timeCell.className = 'bg-light';
+            timeCell.innerHTML = `<strong>${time}</strong>`;
+            row.appendChild(timeCell);
+            
+            days.forEach((day, index) => {
+                const cell = document.createElement('td');
+                cell.className = 'schedule-cell text-center';
+                cell.setAttribute('data-day', index);
+                cell.setAttribute('data-time', time);
+                cell.innerHTML = '<small class="text-muted">Available</small>';
+                row.appendChild(cell);
+            });
+            
+            scheduleBody.appendChild(row);
+        });
+        
+        // Update date headers
+        days.forEach((day, index) => {
+            const date = new Date(startDate);
+            date.setDate(startDate.getDate() + index);
+            const dateElement = document.getElementById(`${day.toLowerCase()}Date`);
+            if (dateElement) {
+                dateElement.textContent = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            }
+        });
+        
+        // Update week range display
+        const start = new Date(startDate);
+        const end = new Date(startDate);
+        end.setDate(start.getDate() + 5); // Monday to Saturday
+        document.getElementById('currentWeekRange').textContent = 
+            `${start.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${end.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
+    }
+    
+    // Initialize weekly schedule
+    let currentWeekStart = new Date(today);
+    // Find Monday of current week
+    currentWeekStart.setDate(today.getDate() - today.getDay() + 1);
+    generateWeeklySchedule(currentWeekStart);
+    
+    // Week navigation
+    document.getElementById('prevWeek').addEventListener('click', function() {
+        currentWeekStart.setDate(currentWeekStart.getDate() - 7);
+        generateWeeklySchedule(new Date(currentWeekStart));
+    });
+    
+    document.getElementById('nextWeek').addEventListener('click', function() {
+        currentWeekStart.setDate(currentWeekStart.getDate() + 7);
+        generateWeeklySchedule(new Date(currentWeekStart));
+    });
+    
+    // Form validation
+    document.getElementById('addAvailabilityForm').addEventListener('submit', function(e) {
+        const startTime = document.getElementById('startTime').value;
+        const endTime = document.getElementById('endTime').value;
+        const date = document.getElementById('availabilityDate').value;
+        
+        if (startTime >= endTime) {
+            e.preventDefault();
+            alert('End time must be after start time.');
+            return false;
+        }
+        
+        const selectedDate = new Date(date);
+        if (selectedDate < new Date(today.setHours(0, 0, 0, 0))) {
+            e.preventDefault();
+            alert('Cannot add availability for past dates.');
+            return false;
+        }
+        
+        return true;
+    });
+    
+    // Filter functions
+    function filterByDate() {
+        const date = document.getElementById('filterDate').value;
+        alert(`Filter by date: ${date} - This requires backend implementation.`);
+    }
+    
+    function filterByStatus(status) {
+        alert(`Filter by status: ${status} - This requires backend implementation.`);
+    }
+    
+    // Appointment actions
+    function approveAppointment(appointmentId) {
+        if (confirm('Approve this appointment?')) {
+            fetch(`/doctor/appointment/${appointmentId}/approve`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: new URLSearchParams({
+                    'appointment_id': appointmentId
+                })
+            })
+            .then(response => {
+                if (response.ok) {
+                    location.reload();
+                } else {
+                    alert('Failed to approve appointment.');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Failed to approve appointment.');
+            });
+        }
+    }
+    
+    function rejectAppointment(appointmentId) {
+        if (confirm('Reject this appointment?')) {
+            fetch(`/doctor/appointment/${appointmentId}/reject`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: new URLSearchParams({
+                    'appointment_id': appointmentId
+                })
+            })
+            .then(response => {
+                if (response.ok) {
+                    location.reload();
+                } else {
+                    alert('Failed to reject appointment.');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Failed to reject appointment.');
+            });
+        }
+    }
+    
+    function deleteAvailability(availabilityId) {
+        if (confirm('Delete this availability slot?')) {
+            fetch(`/doctor/availability/${availabilityId}/delete`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: new URLSearchParams({
+                    'availability_id': availabilityId
+                })
+            })
+            .then(response => {
+                if (response.ok) {
+                    location.reload();
+                } else {
+                    alert('Failed to delete availability slot.');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Failed to delete availability slot.');
+            });
+        }
+    }
+    
+    // Initialize tooltips
+    document.addEventListener('DOMContentLoaded', function() {
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[title]'));
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
+    });
+</script>
+
+<style>
+    /* Custom styles for schedule */
+    .schedule-cell {
+        height: 50px;
+        cursor: pointer;
+        border: 1px solid #dee2e6;
+        transition: all 0.2s;
+    }
+    
+    .schedule-cell:hover {
+        background-color: #f8f9fa;
+        transform: scale(1.02);
+    }
+    
+    .schedule-cell.available {
+        background-color: #d4edda;
+    }
+    
+    .schedule-cell.booked {
+        background-color: #cce5ff;
+    }
+    
+    .schedule-cell.pending {
+        background-color: #fff3cd;
+    }
+    
+    .schedule-cell.unavailable {
+        background-color: #f8f9fa;
+    }
+    
+    .table-bordered th {
+        background-color: #f8f9fc;
+    }
+    
+    .nav-tabs .nav-link {
+        border: none;
+        border-bottom: 3px solid transparent;
+        color: #6c757d;
+        font-weight: 500;
+    }
+    
+    .nav-tabs .nav-link:hover {
+        border-bottom-color: #dee2e6;
+    }
+    
+    .nav-tabs .nav-link.active {
+        color: #4e73df;
+        border-bottom-color: #4e73df;
+        background-color: transparent;
+    }
+    
+    .border-left-primary {
+        border-left: 4px solid #4e73df !important;
+    }
+    
+    .border-left-success {
+        border-left: 4px solid #1cc88a !important;
+    }
+    
+    .border-left-warning {
+        border-left: 4px solid #f6c23e !important;
+    }
+    
+    .border-left-info {
+        border-left: 4px solid #36b9cc !important;
+    }
+    
+    .card {
+        border: none;
+        border-radius: 10px;
+    }
+    
+    .card-header {
+        background-color: #f8f9fc;
+        border-bottom: 1px solid #e3e6f0;
+    }
+</style>
+{% endblock %}

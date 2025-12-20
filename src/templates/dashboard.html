@@ -1,14 +1,229 @@
-{% extends "base.html" %}
-{% block content %}
-<h2>Dashboard</h2>
+{% extends 'base.html' %}
 
-{% if session.get('role') == 'doctor' %}
-    <a class="button" href="{{ url_for('doctor.home') }}">Doctor Dashboard</a>
-{% elif session.get('role') == 'assistant' %}
-    <a class="button" href="{{ url_for('assistant.home') }}">Assistant Dashboard</a>
-{% elif session.get('role') == 'patient' %}
-    <a class="button" href="{{ url_for('patient.home') }}">Patient Dashboard</a>
-{% else %}
-    <p class="small">Please log in to access your dashboard.</p>
-{% endif %}
+{% block title %}Dashboard - Clinic Management{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col">
+            <h1><i class="fas fa-tachometer-alt"></i> Dashboard</h1>
+            <p class="lead">Welcome, {{ session.get('name', session.get('username')) }}!</p>
+        </div>
+    </div>
+
+    <!-- Patient Dashboard -->
+    {% if session.get('role') == 'patient' %}
+    <div class="row g-3">
+        <div class="col-md-4">
+            <div class="card text-center shadow-sm">
+                <div class="card-body">
+                    <i class="fas fa-calendar-check fa-3x text-primary mb-3"></i>
+                    <h3>{{ patient_appointments|default(0) }}</h3>
+                    <p class="text-muted">Total Appointments</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-center shadow-sm">
+                <div class="card-body">
+                    <i class="fas fa-clock fa-3x text-success mb-3"></i>
+                    <h3>{{ upcoming_appointments|default(0) }}</h3>
+                    <p class="text-muted">Upcoming</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-center shadow-sm">
+                <div class="card-body">
+                    <i class="fas fa-file-medical fa-3x text-info mb-3"></i>
+                    <h3>{{ medical_records|default(0) }}</h3>
+                    <p class="text-muted">Medical Records</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-4">
+        <div class="col-md-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-list"></i> Quick Actions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{{ url_for('patient.appointments') }}" class="btn btn-outline-primary">
+                            <i class="fas fa-calendar-plus"></i> Book Appointment
+                        </a>
+                        <a href="{{ url_for('patient.diagnosis') }}" class="btn btn-outline-info">
+                            <i class="fas fa-file-medical-alt"></i> View Medical History
+                        </a>
+                        <a href="{{ url_for('auth.profile') }}" class="btn btn-outline-secondary">
+                            <i class="fas fa-user-edit"></i> Update Profile
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Doctor Dashboard -->
+    {% if session.get('role') == 'doctor' %}
+    <div class="row g-3">
+        <div class="col-md-3">
+            <div class="card text-center shadow-sm">
+                <div class="card-body">
+                    <i class="fas fa-users fa-3x text-primary mb-3"></i>
+                    <h3>{{ doctor_patients|default(0) }}</h3>
+                    <p class="text-muted">Patients</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center shadow-sm">
+                <div class="card-body">
+                    <i class="fas fa-calendar-day fa-3x text-success mb-3"></i>
+                    <h3>{{ today_appointments|default(0) }}</h3>
+                    <p class="text-muted">Today's Appointments</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center shadow-sm">
+                <div class="card-body">
+                    <i class="fas fa-calendar-alt fa-3x text-info mb-3"></i>
+                    <h3>{{ total_appointments|default(0) }}</h3>
+                    <p class="text-muted">Total Appointments</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center shadow-sm">
+                <div class="card-body">
+                    <i class="fas fa-hourglass-half fa-3x text-warning mb-3"></i>
+                    <h3>{{ pending_tasks|default(0) }}</h3>
+                    <p class="text-muted">Pending</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-4">
+        <div class="col-md-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="fas fa-list"></i> Quick Actions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{{ url_for('doctor.doctor_home') }}" class="btn btn-outline-success">
+                            <i class="fas fa-calendar-check"></i> View Today's Appointments
+                        </a>
+                        <a href="{{ url_for('doctor.schedule') }}" class="btn btn-outline-info">
+                            <i class="fas fa-clock"></i> Manage Schedule
+                        </a>
+                        <a href="{{ url_for('doctor.search_patient') }}" class="btn btn-outline-primary">
+                            <i class="fas fa-search"></i> Search Patients
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Assistant Dashboard -->
+    {% if session.get('role') == 'assistant' %}
+    <div class="row g-3">
+        <div class="col-md-4">
+            <div class="card text-center shadow-sm">
+                <div class="card-body">
+                    <i class="fas fa-user-injured fa-3x text-primary mb-3"></i>
+                    <h3>{{ total_patients|default(0) }}</h3>
+                    <p class="text-muted">Total Patients</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-center shadow-sm">
+                <div class="card-body">
+                    <i class="fas fa-calendar-day fa-3x text-success mb-3"></i>
+                    <h3>{{ today_appointments|default(0) }}</h3>
+                    <p class="text-muted">Today's Appointments</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-center shadow-sm">
+                <div class="card-body">
+                    <i class="fas fa-user-md fa-3x text-info mb-3"></i>
+                    <h3>{{ total_doctors|default(0) }}</h3>
+                    <p class="text-muted">Doctors</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-4">
+        <div class="col-md-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0"><i class="fas fa-list"></i> Quick Actions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{{ url_for('assistant.assistant_home') }}" class="btn btn-outline-warning">
+                            <i class="fas fa-calendar-alt"></i> View All Appointments
+                        </a>
+                        <a href="{{ url_for('assistant.search_patient') }}" class="btn btn-outline-primary">
+                            <i class="fas fa-search"></i> Search Patients
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Admin Dashboard -->
+    {% if session.get('role') == 'admin' %}
+    <div class="row g-3">
+        <div class="col-md-6">
+            <div class="card text-center shadow-sm">
+                <div class="card-body">
+                    <i class="fas fa-user-clock fa-3x text-warning mb-3"></i>
+                    <h3>{{ pending_users|default(0) }}</h3>
+                    <p class="text-muted">Pending Approvals</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card text-center shadow-sm">
+                <div class="card-body">
+                    <i class="fas fa-clipboard-list fa-3x text-info mb-3"></i>
+                    <h3>{{ recent_audits|length|default(0) }}</h3>
+                    <p class="text-muted">Recent Activities</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-4">
+        <div class="col-md-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0"><i class="fas fa-list"></i> Admin Actions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{{ url_for('admin.admin_home') }}" class="btn btn-outline-danger">
+                            <i class="fas fa-user-shield"></i> Manage Users
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
 {% endblock %}
