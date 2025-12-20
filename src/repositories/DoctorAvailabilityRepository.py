@@ -1,0 +1,62 @@
+from typing import List, Optional
+from models.doctorAvailability_model import DoctorAvailability
+from repositories.BaseRepository import BaseRepository
+
+class DoctorAvailabilityRepository(BaseRepository):
+    def create_availability(self, doctor_id: int, date: str, start_time: str, end_time: str) -> Optional[DoctorAvailability]:
+        cursor = self.db.cursor()
+        try:
+            cursor.execute(
+                """
+                INSERT INTO doctor_availability (doctor_id, date, start_time, end_time)
+                VALUES (%s, %s, %s, %s)
+                """,
+                (doctor_id, date, start_time, end_time),
+            )
+            self.db.commit()
+            return self.get_by_id(cursor.lastrowid)
+        except Exception as e:
+            self.db.rollback()
+            print(f"Error creating availability: {e}")
+            return None
+        finally:
+            cursor.close()
+
+    def get_by_id(self, av_id: int) -> Optional[DoctorAvailability]:
+        cursor = self.db.cursor(dictionary=True)
+        cursor.execute(
+            "SELECT id, doctor_id, date, start_time, end_time, create_at AS created_at FROM doctor_availability WHERE id = %s",
+            (av_id,),
+        )
+        row = cursor.fetchone()
+        cursor.close()
+        return DoctorAvailability(**row) if row else None
+
+    def list_by_doctor(self, doctor_id: int, start_date: Optional[str] = None, end_date: Optional[str] = None) -> List[DoctorAvailability]:
+        cursor = self.db.cursor(dictionary=True)
+        if start_date and end_date:
+            cursor.execute(
+                "SELECT id, doctor_id, date, start_time, end_time, create_at AS created_at FROM doctor_availability WHERE doctor_id = %s AND date BETWEEN %s AND %s ORDER BY date, start_time",
+                (doctor_id, start_date, end_date),
+            )
+        else:
+            cursor.execute(
+                "SELECT id, doctor_id, date, start_time, end_time, create_at AS created_at FROM doctor_availability WHERE doctor_id = %s ORDER BY date, start_time",
+                (doctor_id,)
+            )
+        rows = cursor.fetchall()
+        cursor.close()
+        return [DoctorAvailability(**r) for r in rows] if rows else []
+
+    def delete_availability(self, av_id: int) -> bool:
+        cursor = self.db.cursor()
+        try:
+            cursor.execute("DELETE FROM doctor_availability WHERE id = %s", (av_id,))
+            self.db.commit()
+            return True
+        except Exception as e:
+            self.db.rollback()
+            print(f"Error deleting availability: {e}")
+            return False
+        finally:
+            cursor.close()

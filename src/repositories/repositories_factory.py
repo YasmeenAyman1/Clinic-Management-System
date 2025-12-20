@@ -1,17 +1,14 @@
-from repositories.mainRepository import (
-    AdminAuditRepository,
-    UploadedFileRepository,
-    MedicalRecordRepository,
-    ContactRepository,
-    AppointmentRepository,
-    AssistantRepository,
-    DoctorScheduleRepository,
-    DoctorRepository,
-    DoctorAvailabilityRepository,
-    PatientRepository,
-    UserRepository,
-)
-
+from repositories.UserRepository import UserRepository
+from repositories.PatientRepository import PatientRepository
+from repositories.DoctorRepository import DoctorRepository
+from repositories.AssistantRepository import AssistantRepository
+from repositories.AppointmentRepository import AppointmentRepository
+from repositories.ContactRepository import ContactRepository
+from repositories.MedicalRecordRepository import MedicalRecordRepository
+from repositories.UploadedFileRepository import UploadedFileRepository
+from repositories.DoctorScheduleRepository import DoctorScheduleRepository
+from repositories.DoctorAvailabilityRepository import DoctorAvailabilityRepository
+from repositories.AdminAuditRepository import AdminAuditRepository
 
 class RepositoryFactory:
     @staticmethod
