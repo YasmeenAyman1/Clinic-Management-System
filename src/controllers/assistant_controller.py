@@ -5,6 +5,7 @@ from repositories.repositories_factory import RepositoryFactory
 
 assistant_bp = Blueprint('assistant', __name__, url_prefix='/assistant')
 user_repo = RepositoryFactory.get_repository("user")
+patient_repo = RepositoryFactory.get_repository("patient")  
 assistant_repo = RepositoryFactory.get_repository("assistant")
 appointment_repo = RepositoryFactory.get_repository("appointment")
 doctor_repo = RepositoryFactory.get_repository("doctor")
@@ -87,12 +88,22 @@ def schedule():
         return redirect(url_for("auth.login"))
     return render_template('assistant/assistant_schedule.html')
 
-@assistant_bp.route('/search_patient')
+@assistant_bp.route('/search_patient', methods=['GET', 'POST'])
 def search_patient():
-    if not session.get("user_id") or session.get("role") != "assistant":
-        flash("Access denied.", category="danger")
+    if not session.get("user_id") or session.get("role") not in ["assistant", "doctor"]:
+        flash("Access denied. Assistant or Doctor access required.", category="danger")
         return redirect(url_for("auth.login"))
     return render_template('assistant/search_patient.html')
+
+@assistant_bp.route('/patient_file/<int:pid>')
+def patient_file(pid):
+    # You can fetch patient data here using patient_repo
+    patient = patient_repo.get_by_id(pid)
+    if not patient:
+        flash("Patient not found.", category="warning")
+        return redirect(url_for('assistant.search_patient'))
+    return render_template('assistant/patient_file.html', patient=patient)
+
 
 @assistant_bp.route('/add_appointment', methods=['POST'])
 def add_appointment():
