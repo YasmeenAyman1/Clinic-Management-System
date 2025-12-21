@@ -161,7 +161,7 @@
                                         <h6 class="mb-0">{{ patient.firstName }} {{ patient.lastName }}</h6>
                                         <small class="text-muted">
                                             {% if patient.birth_date %}
-                                                {{ calculate_age(patient.birth_date) }} years old
+                                                {{ patient.age if patient.age is not none else 'Age not specified' }}
                                             {% else %}
                                                 Age not specified
                                             {% endif %}
@@ -171,7 +171,7 @@
                             </td>
                             <td>
                                 {% if patient.birth_date %}
-                                    {{ calculate_age(patient.birth_date) }}
+                                    {{ patient.age if patient.age is not none else '-' }}
                                 {% else %}
                                     -
                                 {% endif %}
@@ -273,152 +273,6 @@
                                         <i class="fas fa-edit"></i>
                                     </button>
                                 </div>
-                                
-                                <!-- Patient Details Modal -->
-                                <div class="modal fade" id="patientDetailsModal{{ patient.id }}" tabindex="-1" 
-                                     aria-labelledby="patientDetailsModalLabel{{ patient.id }}" aria-hidden="true">
-                                    <div class="modal-dialog modal-lg">
-                                        <div class="modal-content">
-                                            <div class="modal-header">
-                                                <h5 class="modal-title" id="patientDetailsModalLabel{{ patient.id }}">
-                                                    <i class="fas fa-user me-2"></i>
-                                                    Patient Details: {{ patient.firstName }} {{ patient.lastName }}
-                                                </h5>
-                                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                            </div>
-                                            <div class="modal-body">
-                                                <div class="row mb-3">
-                                                    <div class="col-md-8">
-                                                        <div class="d-flex align-items-center">
-                                                            <div class="rounded-circle 
-                                                                {% if patient.gender|lower == 'male' %}bg-primary
-                                                                {% elif patient.gender|lower == 'female' %}bg-danger
-                                                                {% else %}bg-secondary{% endif %}
-                                                                text-white d-flex align-items-center justify-content-center me-3" 
-                                                                 style="width: 60px; height: 60px;">
-                                                                <span style="font-size: 18px;">
-                                                                    {% if patient.firstName and patient.lastName %}
-                                                                        {{ patient.firstName[0] }}{{ patient.lastName[0] }}
-                                                                    {% else %}
-                                                                        ??
-                                                                    {% endif %}
-                                                                </span>
-                                                            </div>
-                                                            <div>
-                                                                <h4 class="mb-1">{{ patient.firstName }} {{ patient.lastName }}</h4>
-                                                                <p class="text-muted mb-0">Patient ID: #PAT{{ "%03d" % patient.id }}</p>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                    <div class="col-md-4 text-end">
-                                                        <span class="badge 
-                                                            {% if patient.id in appointment_ids_today %}bg-success
-                                                            {% else %}bg-secondary{% endif %} p-2">
-                                                            {% if patient.id in appointment_ids_today %}
-                                                                <i class="fas fa-calendar-check me-1"></i> Active Today
-                                                            {% else %}
-                                                                Inactive Today
-                                                            {% endif %}
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                                
-                                                <div class="row">
-                                                    <div class="col-md-6">
-                                                        <div class="card border-0 bg-light">
-                                                            <div class="card-body">
-                                                                <h6 class="text-primary mb-3"><i class="fas fa-info-circle me-2"></i>Personal Information</h6>
-                                                                <p><strong>Full Name:</strong> {{ patient.firstName }} {{ patient.lastName }}</p>
-                                                                <p><strong>Gender:</strong> {{ patient.gender|title }}</p>
-                                                                <p><strong>Date of Birth:</strong> 
-                                                                    {% if patient.birth_date %}
-                                                                        {{ patient.birth_date }} 
-                                                                        <span class="text-muted">({{ calculate_age(patient.birth_date) }} years)</span>
-                                                                    {% else %}
-                                                                        <span class="text-muted">Not specified</span>
-                                                                    {% endif %}
-                                                                </p>
-                                                                <p><strong>Phone:</strong> {{ patient.phone }}</p>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                    <div class="col-md-6">
-                                                        <div class="card border-0 bg-light">
-                                                            <div class="card-body">
-                                                                <h6 class="text-primary mb-3"><i class="fas fa-address-card me-2"></i>Contact Information</h6>
-                                                                <p><strong>Address:</strong> {{ patient.address or 'Not specified' }}</p>
-                                                                <p><strong>Registration Date:</strong> 
-                                                                    {% if patient.create_at %}
-                                                                        {% if patient.create_at is string %}
-                                                                            {{ patient.create_at }}
-                                                                        {% else %}
-                                                                            {{ patient.create_at.strftime('%Y-%m-%d %H:%M:%S') }}
-                                                                        {% endif %}
-                                                                    {% else %}
-                                                                        Not available
-                                                                    {% endif %}
-                                                                </p>
-                                                                <p><strong>User Account:</strong> 
-                                                                    {% if patient.user_id %}
-                                                                        <span class="badge bg-success">Linked</span>
-                                                                    {% else %}
-                                                                        <span class="badge bg-secondary">No account</span>
-                                                                    {% endif %}
-                                                                </p>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                                
-                                                <hr>
-                                                
-                                                <div class="row">
-                                                    <div class="col-12">
-                                                        <h6 class="text-primary mb-3"><i class="fas fa-clipboard-list me-2"></i>Medical Summary</h6>
-                                                        <div class="row">
-                                                            <div class="col-md-3">
-                                                                <div class="text-center p-3 border rounded">
-                                                                    <div class="h4 mb-0">{{ patient_records_count.get(patient.id, 0) }}</div>
-                                                                    <small class="text-muted">Medical Records</small>
-                                                                </div>
-                                                            </div>
-                                                            <div class="col-md-3">
-                                                                <div class="text-center p-3 border rounded">
-                                                                    <div class="h4 mb-0">
-                                                                        {% if patient.id in appointment_ids_today %}1{% else %}0{% endif %}
-                                                                    </div>
-                                                                    <small class="text-muted">Today's Appointments</small>
-                                                                </div>
-                                                            </div>
-                                                            <div class="col-md-6">
-                                                                <div class="p-3 border rounded">
-                                                                    <strong>Last Visit:</strong> 
-                                                                    {% set last_visit = patient_last_visits.get(patient.id) %}
-                                                                    {% if last_visit %}
-                                                                        {% if last_visit is string %}
-                                                                            {{ last_visit }}
-                                                                        {% else %}
-                                                                            {{ last_visit.strftime('%Y-%m-%d') }}
-                                                                        {% endif %}
-                                                                    {% else %}
-                                                                        <span class="text-muted">No visits recorded</span>
-                                                                    {% endif %}
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div class="modal-footer">
-                                                <a href="{{ url_for('doctor.medical_file', pid=patient.id) }}" 
-                                                   class="btn btn-primary">
-                                                    <i class="fas fa-file-medical me-2"></i>View Full Medical File
-                                                </a>
-                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
                             </td>
                         </tr>
                         {% endfor %}
@@ -444,6 +298,154 @@
         </div>
     </div>
 </div>
+
+<!-- Patient Details Modals - MOVED OUTSIDE THE TABLE -->
+{% for patient in patients %}
+<div class="modal fade" id="patientDetailsModal{{ patient.id }}" tabindex="-1" 
+     aria-labelledby="patientDetailsModalLabel{{ patient.id }}" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="patientDetailsModalLabel{{ patient.id }}">
+                    <i class="fas fa-user me-2"></i>
+                    Patient Details: {{ patient.firstName }} {{ patient.lastName }}
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row mb-3">
+                    <div class="col-md-8">
+                        <div class="d-flex align-items-center">
+                            <div class="rounded-circle 
+                                {% if patient.gender|lower == 'male' %}bg-primary
+                                {% elif patient.gender|lower == 'female' %}bg-danger
+                                {% else %}bg-secondary{% endif %}
+                                text-white d-flex align-items-center justify-content-center me-3" 
+                                 style="width: 60px; height: 60px;">
+                                <span style="font-size: 18px;">
+                                    {% if patient.firstName and patient.lastName %}
+                                        {{ patient.firstName[0] }}{{ patient.lastName[0] }}
+                                    {% else %}
+                                        ??
+                                    {% endif %}
+                                </span>
+                            </div>
+                            <div>
+                                <h4 class="mb-1">{{ patient.firstName }} {{ patient.lastName }}</h4>
+                                <p class="text-muted mb-0">Patient ID: #PAT{{ "%03d" % patient.id }}</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4 text-end">
+                        <span class="badge 
+                            {% if patient.id in appointment_ids_today %}bg-success
+                            {% else %}bg-secondary{% endif %} p-2">
+                            {% if patient.id in appointment_ids_today %}
+                                <i class="fas fa-calendar-check me-1"></i> Active Today
+                            {% else %}
+                                Inactive Today
+                            {% endif %}
+                        </span>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="card border-0 bg-light">
+                            <div class="card-body">
+                                <h6 class="text-primary mb-3"><i class="fas fa-info-circle me-2"></i>Personal Information</h6>
+                                <p><strong>Full Name:</strong> {{ patient.firstName }} {{ patient.lastName }}</p>
+                                <p><strong>Gender:</strong> {{ patient.gender|title }}</p>
+                                <p><strong>Date of Birth:</strong> 
+                                    {% if patient.birth_date %}
+                                        {{ patient.birth_date }} 
+                                        <span class="text-muted">({{ patient.age if patient.age is not none else 'Age not specified' }} years)</span>
+                                    {% else %}
+                                        <span class="text-muted">Not specified</span>
+                                    {% endif %}
+                                </p>
+                                <p><strong>Phone:</strong> {{ patient.phone }}</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card border-0 bg-light">
+                            <div class="card-body">
+                                <h6 class="text-primary mb-3"><i class="fas fa-address-card me-2"></i>Contact Information</h6>
+                                <p><strong>Address:</strong> {{ patient.address or 'Not specified' }}</p>
+                                <p><strong>Registration Date:</strong> 
+                                    {% if patient.create_at %}
+                                        {% if patient.create_at is string %}
+                                            {{ patient.create_at }}
+                                        {% else %}
+                                            {{ patient.create_at.strftime('%Y-%m-%d %H:%M:%S') }}
+                                        {% endif %}
+                                    {% else %}
+                                        Not available
+                                    {% endif %}
+                                </p>
+                                <p><strong>User Account:</strong> 
+                                    {% if patient.user_id %}
+                                        <span class="badge bg-success">Linked</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">No account</span>
+                                    {% endif %}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <hr>
+                
+                <div class="row">
+                    <div class="col-12">
+                        <h6 class="text-primary mb-3"><i class="fas fa-clipboard-list me-2"></i>Medical Summary</h6>
+                        <div class="row">
+                            <div class="col-md-3">
+                                <div class="text-center p-3 border rounded">
+                                    <div class="h4 mb-0">{{ patient_records_count.get(patient.id, 0) }}</div>
+                                    <small class="text-muted">Medical Records</small>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="text-center p-3 border rounded">
+                                    <div class="h4 mb-0">
+                                        {% if patient.id in appointment_ids_today %}1{% else %}0{% endif %}
+                                    </div>
+                                    <small class="text-muted">Today's Appointments</small>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="p-3 border rounded">
+                                    <strong>Last Visit:</strong> 
+                                    {% set last_visit = patient_last_visits.get(patient.id) %}
+                                    {% if last_visit %}
+                                        {% if last_visit is string %}
+                                            {{ last_visit }}
+                                        {% else %}
+                                            {{ last_visit.strftime('%Y-%m-%d') }}
+                                        {% endif %}
+                                    {% else %}
+                                        <span class="text-muted">No visits recorded</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <a href="{{ url_for('doctor.medical_file', pid=patient.id) }}" 
+                   class="btn btn-primary">
+                    <i class="fas fa-file-medical me-2"></i>View Full Medical File
+                </a>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endfor %}
 
 <!-- Add Patient Modal -->
 <div class="modal fade" id="addPatientModal" tabindex="-1" aria-labelledby="addPatientModalLabel" aria-hidden="true">

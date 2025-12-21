@@ -26,7 +26,7 @@
                 <ul class="navbar-nav ms-auto">
                     {% if session.get('username') %}
                         {% if session.get('role') == 'patient' %}
-                            <li class="nav-item"><a class="nav-link" href="{{ url_for('patient.list_patients') }}">Home</a></li>
+                            <li class="nav-item"><a class="nav-link" href="{{ url_for('patient.patient_home') }}">Home</a></li>
                             <li class="nav-item"><a class="nav-link" href="{{ url_for('patient.appointments') }}">Appointments</a></li>
                             <li class="nav-item"><a class="nav-link" href="{{ url_for('patient.diagnosis') }}">My Health</a></li>
                         {% elif session.get('role') == 'doctor' %}

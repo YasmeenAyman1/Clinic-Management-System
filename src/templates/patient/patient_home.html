@@ -1,261 +1,380 @@
-<!-- <!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Patient Dashboard - Clinic Management</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-</head>
-<body class="dashboard">
-    <div class="sidebar">
-        <div class="sidebar-header">
-            <h2><i class="fas fa-stethoscope"></i> MediCare</h2>
-            <p>Patient Portal</p>
-        </div>
-        
-        <div class="user-info">
-            <div class="user-avatar">
-                <i class="fas fa-user-injured"></i>
-            </div>
-            <h3>{{ session.user_name }}</h3>
-            <p class="user-role">Patient</p>
-        </div>
-        
-        <nav class="sidebar-nav">
-            <a href="{{ url_for('patient.patient_home') }}" class="active">
-                <i class="fas fa-home"></i> Dashboard
-            </a>
-            <a href="{{ url_for('patient.appointments') }}">
-                <i class="fas fa-calendar-check"></i> Appointments
-            </a>
-            <a href="{{ url_for('patient.diagnosis') }}">
-                <i class="fas fa-file-medical"></i> Medical History
-            </a>
-            <a href="{{ url_for('patient.profile') }}">
-                <i class="fas fa-user-circle"></i> Profile
-            </a>
-            <a href="{{ url_for('auth.logout') }}">
-                <i class="fas fa-sign-out-alt"></i> Logout
-            </a>
-        </nav>
-    </div>
-
-    <div class="main-content">
-        <header class="dashboard-header">
-            <h1>Patient Dashboard</h1>
-            <div class="header-actions">
-                <button class="btn-notification">
-                    <i class="fas fa-bell"></i>
-                    <span class="notification-badge">3</span>
-                </button>
-                <div class="current-date">
-                    <i class="fas fa-calendar-day"></i>
-                    <span id="currentDate"></span>
-                </div>
-            </div>
-        </header>
-
-        <div class="dashboard-content">
-            <div class="welcome-banner">
-                <div class="welcome-text">
-                    <h2>Welcome, {{ session.user_name }}!</h2>
-                    <p>Manage your appointments and access your medical records.</p>
-                </div>
-                <div class="welcome-actions">
-                    <a href="{{ url_for('patient.appointments') }}" class="btn-primary">
-                        <i class="fas fa-calendar-plus"></i> Book Appointment
-                    </a>
-                </div>
-            </div>
-
-            <div class="stats-container">
-                <div class="stat-card">
-                    <div class="stat-icon upcoming">
-                        <i class="fas fa-calendar-alt"></i>
-                    </div>
-                    <div class="stat-info">
-                        <h3>Upcoming Appointments</h3>
-                        <p class="stat-number">
-                            {{ appointments|selectattr('status', 'equalto', 'Upcoming')|list|length }}
-                        </p>
-                    </div>
-                </div>
-                
-                <div class="stat-card">
-                    <div class="stat-icon completed">
-                        <i class="fas fa-check-circle"></i>
-                    </div>
-                    <div class="stat-info">
-                        <h3>Completed Visits</h3>
-                        <p class="stat-number">
-                            {{ appointments|selectattr('status', 'equalto', 'Completed')|list|length }}
-                        </p>
-                    </div>
-                </div>
-                
-                <div class="stat-card">
-                    <div class="stat-icon records">
-                        <i class="fas fa-file-medical-alt"></i>
-                    </div>
-                    <div class="stat-info">
-                        <h3>Medical Records</h3>
-                        <p class="stat-number">{{ medical_history|length }}</p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="section-card">
-                <div class="section-header">
-                    <h2><i class="fas fa-calendar-alt"></i> Upcoming Appointments</h2>
-                    <a href="{{ url_for('patient.appointments') }}" class="view-all">View All</a>
-                </div>
-                
-                {% if appointments %}
-                <div class="appointments-list">
-                    {% for appointment in appointments if appointment.status == 'Upcoming' %}
-                    <div class="appointment-item">
-                        <div class="appointment-date">
-                            <div class="date-day">{{ appointment.date.split('-')[2] }}</div>
-                            <div class="date-month">{{ appointment.date.split('-')[1] }}</div>
-                        </div>
-                        <div class="appointment-info">
-                            <h3>Appointment with {{ appointment.doctor }}</h3>
-                            <p><i class="fas fa-clock"></i> {{ appointment.time }}</p>
-                            <p><i class="fas fa-user-md"></i> {{ appointment.doctor }}</p>
-                        </div>
-                        <div class="appointment-status status-upcoming">
-                            {{ appointment.status }}
-                        </div>
-                    </div>
-                    {% endfor %}
-                </div>
-                {% else %}
-                <div class="empty-state">
-                    <i class="fas fa-calendar-times"></i>
-                    <p>No upcoming appointments</p>
-                    <a href="{{ url_for('patient.appointments') }}" class="btn-secondary">Book Now</a>
-                </div>
-                {% endif %}
-            </div>
-
-            <div class="section-card">
-                <div class="section-header">
-                    <h2><i class="fas fa-history"></i> Recent Medical History</h2>
-                    <a href="{{ url_for('patient.diagnosis') }}" class="view-all">View All</a>
-                </div>
-                
-                {% if medical_history %}
-                <div class="history-list">
-                    {% for record in medical_history[:3] %}
-                    <div class="history-item">
-                        <div class="history-date">{{ record.date }}</div>
-                        <div class="history-details">
-                            <h3>{{ record.diagnosis }}</h3>
-                            <p>{{ record.treatment }}</p>
-                            <p class="history-doctor">Dr. {{ record.doctor }}</p>
-                        </div>
-                    </div>
-                    {% endfor %}
-                </div>
-                {% else %}
-                <div class="empty-state">
-                    <i class="fas fa-file-medical"></i>
-                    <p>No medical records found</p>
-                </div>
-                {% endif %}
-            </div>
-        </div>
-    </div>
-
-    <script>
-        // Set current date
-        const now = new Date();
-        const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-        document.getElementById('currentDate').textContent = now.toLocaleDateString('en-US', options);
-    </script>
-</body>
-</html>
- -->
 {% extends "base.html" %}
 {% block title %}Patient Dashboard{% endblock %}
 
 {% block content %}
+
 <div class="row">
     <div class="col-md-3">
         <!-- Sidebar -->
         <div class="list-group">
-            <a href="{{ url_for('patient_home') }}" class="list-group-item list-group-item-action active">Dashboard</a>
-            <a href="{{ url_for('patient.appointments') }}" class="list-group-item list-group-item-action">Appointments</a>
-            <a href="{{ url_for('patient.diagnosis') }}" class="list-group-item list-group-item-action">Medical History</a>
-            <a href="{{ url_for('patient.profile') }}" class="list-group-item list-group-item-action">Profile</a>
-            <a href="{{ url_for('auth.logout') }}" class="list-group-item list-group-item-action text-danger">Logout</a>
+            <a href="{{ url_for('patient.patient_home') }}" class="list-group-item list-group-item-action active">
+                <i class="fas fa-home me-2"></i>Dashboard
+            </a>
+            <a href="{{ url_for('patient.appointments') }}" class="list-group-item list-group-item-action">
+                <i class="fas fa-calendar-alt me-2"></i>Appointments
+            </a>
+            <a href="{{ url_for('patient.diagnosis') }}" class="list-group-item list-group-item-action">
+                <i class="fas fa-file-medical me-2"></i>Medical History
+            </a>
+            <a href="{{ url_for('patient.profile') }}" class="list-group-item list-group-item-action">
+                <i class="fas fa-user me-2"></i>Profile
+            </a>
+            <a href="{{ url_for('auth.logout') }}" class="list-group-item list-group-item-action text-danger">
+                <i class="fas fa-sign-out-alt me-2"></i>Logout
+            </a>
         </div>
     </div>
 
     <div class="col-md-9">
-        <!-- Welcome -->
-        <div class="card mb-3">
+        <!-- Welcome Card -->
+        <div class="card mb-4">
             <div class="card-body">
-                <h3>Welcome, {{ session.user_name }}!</h3>
-                <p>Manage your appointments and access medical records.</p>
-                <a href="{{ url_for('patient.appointments') }}" class="btn btn-primary">
-                    <i class="fas fa-calendar-plus"></i> Book Appointment
-                </a>
-            </div>
-        </div>
-
-        <!-- Stats -->
-        <div class="row mb-3">
-            <div class="col-md-4">
-                <div class="card text-center">
-                    <div class="card-body">
-                        <h5>Upcoming Appointments</h5>
-                        <h3>{{ appointments|selectattr('status', 'equalto', 'Upcoming')|list|length }}</h3>
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h3 class="card-title">Welcome, {{ patient.firstName if patient else session.get('name', 'Patient') }}!</h3>
+                        <p class="card-text">Manage your appointments and access medical records.</p>
                     </div>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="card text-center">
-                    <div class="card-body">
-                        <h5>Completed Visits</h5>
-                        <h3>{{ appointments|selectattr('status', 'equalto', 'Completed')|list|length }}</h3>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="card text-center">
-                    <div class="card-body">
-                        <h5>Medical Records</h5>
-                        <h3>{{ medical_history|length }}</h3>
-                    </div>
+                    <a href="{{ url_for('patient.appointments') }}" class="btn btn-primary btn-lg">
+                        <i class="fas fa-calendar-plus me-2"></i> Book Appointment
+                    </a>
                 </div>
             </div>
         </div>
-
-        <!-- Upcoming Appointments -->
-        <div class="card mb-3">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <span><i class="fas fa-calendar-alt"></i> Upcoming Appointments</span>
-                <a href="{{ url_for('patient.appointments') }}">View All</a>
-            </div>
-            <div class="card-body">
-                {% if appointments %}
-                    <ul class="list-group">
-                        {% for appointment in appointments if appointment.status == 'Upcoming' %}
-                        <li class="list-group-item d-flex justify-content-between align-items-center">
-                            <div>
-                                <strong>{{ appointment.doctor }}</strong> at {{ appointment.time }}
+            <!-- Stats Cards -->
+            <div class="row mb-4">
+                <div class="col-md-4">
+                    <div class="card text-center h-100">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-center align-items-center mb-3">
+                                <i class="fas fa-calendar-check fa-2x text-primary"></i>
                             </div>
-                            <span class="badge bg-success">{{ appointment.status }}</span>
-                        </li>
+                            <h5 class="card-title">Upcoming Appointments</h5>
+                            <h2 class="card-text display-6">
+                                <!-- Use the new upcoming_appointments variable -->
+                                {% if upcoming_appointments %}
+                                    {{ upcoming_appointments|length }}
+                                {% else %}
+                                    0
+                                {% endif %}
+                            </h2>
+                            <a href="{{ url_for('patient.appointments') }}" class="btn btn-outline-primary btn-sm mt-2">View All</a>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-4">
+                    <div class="card text-center h-100">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-center align-items-center mb-3">
+                                <i class="fas fa-check-circle fa-2x text-success"></i>
+                            </div>
+                            <h5 class="card-title">Completed Visits</h5>
+                            <h2 class="card-text display-6">
+                                <!-- Use the new completed_appointments variable -->
+                                {% if completed_appointments %}
+                                    {{ completed_appointments|length }}
+                                {% else %}
+                                    0
+                                {% endif %}
+                            </h2>
+                            <a href="{{ url_for('patient.diagnosis') }}" class="btn btn-outline-success btn-sm mt-2">View History</a>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-4">
+                    <div class="card text-center h-100">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-center align-items-center mb-3">
+                                <i class="fas fa-file-medical fa-2x text-info"></i>
+                            </div>
+                            <h5 class="card-title">Medical Records</h5>
+                            <h2 class="card-text display-6">
+                                {% if medical_history %}
+                                    {{ medical_history|length }}
+                                {% else %}
+                                    0
+                                {% endif %}
+                            </h2>
+                            <a href="{{ url_for('patient.diagnosis') }}" class="btn btn-outline-info btn-sm mt-2">View Records</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+                <!-- Upcoming Appointments Section -->
+            <div class="card">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-calendar-alt me-2"></i> Upcoming Appointments
+                    </h5>
+                    <a href="{{ url_for('patient.appointments') }}" class="btn btn-light btn-sm">
+                        View All <i class="fas fa-arrow-right ms-1"></i>
+                    </a>
+                </div>
+                <div class="card-body">
+                    {% if upcoming_appointments and upcoming_appointments|length > 0 %}
+                        {% for appointment in upcoming_appointments %}
+                            <div class="appointment-item mb-3 p-3 border rounded">
+                                <div class="row align-items-center">
+                                    <div class="col-md-8">
+                                        <div class="d-flex align-items-center">
+                                            <div class="me-3">
+                                                <i class="fas fa-user-md fa-2x text-primary"></i>
+                                            </div>
+                                            <div>
+                                                <h6 class="mb-1">
+                                                    {% if appointment.doctor_name %}
+                                                        {{ appointment.doctor_name }}
+                                                    {% else %}
+                                                        Doctor {{ appointment.doctor_id }}
+                                                    {% endif %}
+                                                </h6>
+                                                <p class="mb-0 text-muted">
+                                                    <i class="far fa-calendar me-1"></i>
+                                                    {{ appointment.date }}
+                                                    {% if appointment.appointment_time %}
+                                                        <i class="far fa-clock ms-3 me-1"></i>
+                                                        {{ appointment.appointment_time }}
+                                                    {% endif %}
+                                                </p>
+                                                {% if appointment.reason %}
+                                                    <p class="mb-0 small text-muted mt-1">
+                                                        <i class="fas fa-stethoscope me-1"></i>
+                                                        {{ appointment.reason|truncate(50) }}
+                                                    </p>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4 text-end">
+                                        <span class="badge bg-warning text-dark fs-6 p-2">
+                                            {{ appointment.status }}
+                                        </span>
+                                        <div class="mt-2">
+                                            {% if appointment.id %}
+                                                <a href="{{ url_for('patient.appointment_details', appointment_id=appointment.id) if 'appointment_details' in url_map else '#' }}" 
+                                                class="btn btn-outline-primary btn-sm">
+                                                    View Details
+                                                </a>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         {% endfor %}
-                    </ul>
-                {% else %}
-                    <p>No upcoming appointments. <a href="{{ url_for('patient.appointments') }}">Book now</a></p>
-                {% endif %}
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-calendar-times fa-3x text-muted mb-3"></i>
+                            <h5>No Upcoming Appointments</h5>
+                            <p class="text-muted">You don't have any upcoming appointments scheduled.</p>
+                            <a href="{{ url_for('patient.appointments') }}" class="btn btn-primary">
+                                <i class="fas fa-calendar-plus me-2"></i> Book an Appointment
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            <!-- Completed Appointments Section (Optional) -->
+            <div class="card mt-4">
+                <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-history me-2"></i> Recent Completed Visits
+                    </h5>
+                    <a href="{{ url_for('patient.diagnosis') }}" class="btn btn-light btn-sm">
+                        View All <i class="fas fa-arrow-right ms-1"></i>
+                    </a>
+                </div>
+                <div class="card-body">
+                    {% if completed_appointments and completed_appointments|length > 0 %}
+                        {% for appointment in completed_appointments[:3] %} <!-- Show only last 3 -->
+                            <div class="appointment-item mb-3 p-3 border rounded">
+                                <div class="row align-items-center">
+                                    <div class="col-md-8">
+                                        <div class="d-flex align-items-center">
+                                            <div class="me-3">
+                                                <i class="fas fa-user-md fa-2x text-success"></i>
+                                            </div>
+                                            <div>
+                                                <h6 class="mb-1">
+                                                    {% if appointment.doctor_name %}
+                                                        {{ appointment.doctor_name }}
+                                                    {% else %}
+                                                        Doctor {{ appointment.doctor_id }}
+                                                    {% endif %}
+                                                </h6>
+                                                <p class="mb-0 text-muted">
+                                                    <i class="far fa-calendar me-1"></i>
+                                                    {{ appointment.date }}
+                                                    {% if appointment.appointment_time %}
+                                                        <i class="far fa-clock ms-3 me-1"></i>
+                                                        {{ appointment.appointment_time }}
+                                                    {% endif %}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4 text-end">
+                                        <span class="badge bg-success fs-6 p-2">
+                                            {{ appointment.status }}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                        
+                        {% if completed_appointments|length > 3 %}
+                            <div class="text-center mt-3">
+                                <a href="{{ url_for('patient.diagnosis') }}" class="btn btn-outline-success">
+                                    View All {{ completed_appointments|length }} Completed Visits
+                                </a>
+                            </div>
+                        {% endif %}
+                        
+                    {% else %}
+                        <div class="text-center py-3">
+                            <p class="text-muted mb-0">No completed visits yet.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        <!-- Quick Actions Section -->
+        <div class="row mt-4">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">
+                            <i class="fas fa-notes-medical me-2 text-info"></i>
+                            Quick Actions
+                        </h5>
+                        <div class="list-group list-group-flush">
+                            <a href="{{ url_for('patient.appointments') }}" class="list-group-item list-group-item-action">
+                                <i class="fas fa-plus-circle me-2 text-success"></i>
+                                Book New Appointment
+                            </a>
+                            <a href="{{ url_for('patient.profile') }}" class="list-group-item list-group-item-action">
+                                <i class="fas fa-user-edit me-2 text-primary"></i>
+                                Update Profile
+                            </a>
+                            <a href="{{ url_for('patient.diagnosis') }}" class="list-group-item list-group-item-action">
+                                <i class="fas fa-file-download me-2 text-warning"></i>
+                                Download Medical Records
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">
+                            <i class="fas fa-phone-alt me-2 text-success"></i>
+                            Need Help?
+                        </h5>
+                        <p class="card-text">Contact our support team for assistance:</p>
+                        <ul class="list-unstyled">
+                            <li class="mb-2">
+                                <i class="fas fa-phone me-2 text-primary"></i>
+                                <strong>Phone:</strong> +123 456 7890
+                            </li>
+                            <li class="mb-2">
+                                <i class="fas fa-envelope me-2 text-primary"></i>
+                                <strong>Email:</strong> support@medicareclinic.com
+                            </li>
+                            <li>
+                                <i class="fas fa-clock me-2 text-primary"></i>
+                                <strong>Hours:</strong> Mon-Fri: 8:00 AM - 8:00 PM
+                            </li>
+                        </ul>
+                        <a href="#" class="btn btn-outline-primary">
+                            <i class="fas fa-comment-medical me-2"></i>
+                            Live Chat Support
+                        </a>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 </div>
+
+<!-- Custom CSS for better styling -->
+<style>
+    .appointment-item {
+        transition: all 0.3s ease;
+        background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+    }
+    
+    .appointment-item:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        background: linear-gradient(135deg, #e3f2fd 0%, #f8f9fa 100%);
+    }
+    
+    .list-group-item.active {
+        background-color: #0d6efd;
+        border-color: #0d6efd;
+    }
+    
+    .card {
+        border-radius: 10px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        border: 1px solid #eaeaea;
+    }
+    
+    .card-header {
+        border-radius: 10px 10px 0 0 !important;
+    }
+    
+    .display-6 {
+        font-weight: 700;
+        color: #2c3e50;
+    }
+</style>
+
+<!-- JavaScript for interactivity -->
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Add click handlers to appointment items
+        const appointmentItems = document.querySelectorAll('.appointment-item');
+        appointmentItems.forEach(item => {
+            item.style.cursor = 'pointer';
+            item.addEventListener('click', function() {
+                const viewDetailsBtn = this.querySelector('.btn-outline-primary');
+                if (viewDetailsBtn && viewDetailsBtn.href !== '#') {
+                    window.location.href = viewDetailsBtn.href;
+                }
+            });
+        });
+        
+        // Update last visit time
+        function updateTime() {
+            const timeElement = document.getElementById('current-time');
+            if (timeElement) {
+                const now = new Date();
+                timeElement.textContent = now.toLocaleTimeString();
+            }
+        }
+        
+        // Update time every minute
+        updateTime();
+        setInterval(updateTime, 60000);
+        
+        // Smooth scrolling for anchor links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const targetId = this.getAttribute('href');
+                if (targetId !== '#') {
+                    const targetElement = document.querySelector(targetId);
+                    if (targetElement) {
+                        targetElement.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'start'
+                        });
+                    }
+                }
+            });
+        });
+    });
+</script>
 {% endblock %}

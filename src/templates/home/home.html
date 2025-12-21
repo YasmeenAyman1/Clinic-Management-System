@@ -3,6 +3,45 @@
 {% block title %}Welcome - Clinic Management System{% endblock %}
 
 {% block content %}
+<!-- Check if user is logged in -->
+{% if session.get('user_id') %}
+<div class="container mt-5">
+    <div class="card text-center shadow">
+        <div class="card-body py-5">
+            <i class="fas fa-check-circle fa-5x text-success mb-4"></i>
+            <h2 class="card-title">Welcome Back!</h2>
+            <p class="card-text lead">
+                You are already logged in as 
+                <strong>{{ session.get('name', session.get('username')) }}</strong>
+                ({{ session.get('role')|title }})
+            </p>
+            <div class="mt-4">
+                {% if session.get('role') == 'patient' %}
+                    <a href="{{ url_for('patient.patient_home') }}" class="btn btn-primary btn-lg me-2">
+                        <i class="fas fa-home"></i> Go to Patient Dashboard
+                    </a>
+                {% elif session.get('role') == 'doctor' %}
+                    <a href="{{ url_for('doctor.doctor_home') }}" class="btn btn-primary btn-lg me-2">
+                        <i class="fas fa-home"></i> Go to Doctor Dashboard
+                    </a>
+                {% elif session.get('role') == 'assistant' %}
+                    <a href="{{ url_for('assistant.assistant_home') }}" class="btn btn-primary btn-lg me-2">
+                        <i class="fas fa-home"></i> Go to Assistant Dashboard
+                    </a>
+                {% elif session.get('role') == 'admin' %}
+                    <a href="{{ url_for('admin.admin_home') }}" class="btn btn-primary btn-lg me-2">
+                        <i class="fas fa-home"></i> Go to Admin Dashboard
+                    </a>
+                {% endif %}
+                <a href="{{ url_for('auth.logout') }}" class="btn btn-outline-secondary btn-lg">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% else %}
+<!-- Original content for non-logged in users -->
 <!-- Hero Section -->
 <div class="bg-primary text-white py-5 mb-5">
     <div class="container">
@@ -100,4 +139,5 @@
         <i class="fas fa-user-plus"></i> Create Your Account Now
     </a>
 </div>
+{% endif %}
 {% endblock %}
