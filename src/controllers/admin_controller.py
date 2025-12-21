@@ -10,9 +10,15 @@ audit_repo = RepositoryFactory.get_repository('admin_audit')
 
 @admin_bp.before_request
 def enforce_admin():
-    # Ensure user is logged in and is an active admin for all admin routes
-    if session.get('role') != 'admin' or session.get('status') != 'active':
+    # Ensure user is logged in and is an admin
+    if session.get('role') != 'admin':
         flash('Access denied. Admin only.', category='danger')
+        return redirect(url_for('auth.login'))
+    
+    # Check if admin account is active by querying the database
+    user = user_repo.get_by_id(session.get('user_id'))
+    if not user or user.status != 'active':
+        flash('Your admin account is not active.', category='danger')
         return redirect(url_for('auth.login'))
 
     # Protect POST endpoints with a session-based CSRF token
@@ -23,8 +29,13 @@ def enforce_admin():
             return redirect(url_for('admin.admin_home'))
 
 def require_admin():
-    if session.get('role') != 'admin' or session.get('status') != 'active':
+    if session.get('role') != 'admin':
         flash('Access denied. Admin only.', category='danger')
+        return False
+    
+    user = user_repo.get_by_id(session.get('user_id'))
+    if not user or user.status != 'active':
+        flash('Your admin account is not active.', category='danger')
         return False
     return True
 

@@ -173,9 +173,6 @@ def signup():
             
     return render_template("signup.html")
 
-# ADD THIS LINE TO CLOSE THE FUNCTION
-# This was likely missing in your code
-
 @authO_bp.route("/login", methods=['GET', 'POST'])
 def login():
     if request.method == "POST":
@@ -206,6 +203,7 @@ def login():
         session["user_id"] = user.id
         session["username"] = user.username
         session["role"] = user.role
+        session["status"] = user.status
         
         # Get user's name based on role
         if user.role == "patient":
@@ -228,7 +226,7 @@ def login():
         
         # Redirect based on role
         if user.role == "patient":
-            return redirect(url_for("patient.list_patients"))
+            return redirect(url_for("patient.patient_home"))
         elif user.role == "doctor":
             return redirect(url_for("doctor.doctor_home"))
         elif user.role == "assistant":
@@ -247,58 +245,6 @@ def logout():
     flash("Logged out successfully!", category="success")
     return redirect(url_for("auth.login"))
 
-@authO_bp.route("/debug_patient")
-def debug_patient():
-    """Debug patient creation"""
-    results = []
-    
-    # Test 1: Check existing patients
-    try:
-        cursor = patient_repo.db.cursor(dictionary=True)
-        cursor.execute("SELECT id, firstName, lastName, phone, user_id FROM patient ORDER BY id DESC LIMIT 5")
-        existing = cursor.fetchall()
-        cursor.close()
-        
-        results.append(f"Existing patients (last 5): {existing}")
-    except Exception as e:
-        results.append(f"Error checking existing: {e}")
-    
-    # Test 2: Try to create a test patient
-    try:
-        import time
-        test_phone = f"+20test{int(time.time()) % 10000}"
-        test_phone_digits = ''.join(filter(str.isdigit, test_phone))
-        
-        results.append(f"\nTest phone: {test_phone}, Digits only: {test_phone_digits}")
-        
-        test_patient = patient_repo.create_patient(
-            first_name="Debug",
-            last_name="Test",
-            phone=test_phone_digits,
-            user_id=None,
-            gender="male",
-            birth_date=None,
-            address=None
-        )
-        
-        if test_patient:
-            results.append(f"Test patient created! ID: {test_patient.id}")
-            
-            # Clean up
-            cursor = patient_repo.db.cursor()
-            cursor.execute("DELETE FROM patient WHERE id = %s", (test_patient.id,))
-            patient_repo.db.commit()
-            cursor.close()
-            results.append("Test patient cleaned up")
-        else:
-            results.append("Test patient creation returned None")
-            
-    except Exception as e:
-        results.append(f"Error in test: {e}")
-        import traceback
-        results.append(f"Traceback: {traceback.format_exc()}")
-    
-    return "<br>".join(results)
 
 @authO_bp.route("/dashboard")
 def dashboard():
@@ -502,14 +448,7 @@ def change_password():
         
         # Update password
         hashed_pw = generate_password_hash(new_password)
-        cursor = user_repo.db.cursor()
-        cursor.execute(
-            "UPDATE user SET password = %s WHERE id = %s",
-            (hashed_pw, user.id)
-        )
-        user_repo.db.commit()
-        cursor.close()
-        
+        user_repo.update_password(user.id, hashed_pw)
         flash("Password changed successfully!", category="success")
         return redirect(url_for("auth.profile"))
     
