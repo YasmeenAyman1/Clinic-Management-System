@@ -8,3 +8,4 @@ class Doctor:
         self.user_id=user_id
         self.specialization=specialization
         self.created_at=created_at
+

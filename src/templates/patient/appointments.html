@@ -1,24 +1,206 @@
 {% extends "base.html" %}
+{% block title %}My Appointments{% endblock %}
+
 {% block content %}
-<h2>My Appointments</h2>
-{% if appointments %}
-<table>
-  <tr><th>Date</th><th>Time</th><th>Doctor</th><th>Status</th><th>Actions</th></tr>
-  {% for appt in appointments %}
-  <tr>
-    <td>{{ appt.date }}</td>
-    <td>{{ appt.time }}</td>
-    <td>{{ appt.doctor }}</td>
-    <td>{{ appt.status }}</td>
-    <td>
-      {% if appt.status == 'Upcoming' %}
-        <a href="{{ url_for('patient.cancel_appointment', id=appt.id) }}">Cancel</a>
-      {% endif %}
-    </td>
-  </tr>
-  {% endfor %}
-</table>
-{% else %}
-<p>No appointments found. <a href="{{ url_for('patient.book_appointment') }}">Book now</a></p>
-{% endif %}
+<div class="container mt-4">
+    <h2 class="mb-4">
+        <i class="fas fa-calendar-alt"></i> My Appointments
+    </h2>
+    
+    <!-- Book New Appointment Form -->
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">Book New Appointment</h5>
+        </div>
+        <div class="card-body">
+            <!-- Form to check available slots (GET) -->
+            <form method="GET" action="{{ url_for('patient.appointments') }}" class="row g-3 mb-3" id="checkSlotsForm">
+                <div class="col-md-4">
+                    <label for="doctor_id" class="form-label">Select Doctor</label>
+                    <select class="form-select" id="doctor_id" name="doctor_id" required>
+                        <option value="">Choose a doctor...</option>
+                        {% for doctor in doctors %}
+                            <option value="{{ doctor.id }}" 
+                                    {% if selected_doctor_id == doctor.id %}selected{% endif %}>
+                                Dr. {{ doctor.firstName }} {{ doctor.lastName }} - {{ doctor.specialization }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label for="date" class="form-label">Select Date</label>
+                    <input type="date" class="form-control" id="date" name="date" 
+                           value="{{ selected_date }}" required>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">&nbsp;</label>
+                    <button type="submit" class="btn btn-primary w-100" name="check_slots">
+                        <i class="fas fa-search"></i> Check Available Slots
+                    </button>
+                </div>
+            </form>
+            
+            <!-- Form to book appointment (POST) - only shows if slots available -->
+            {% if selected_doctor_id and selected_date and available_slots %}
+            <form method="POST" action="{{ url_for('patient.appointments') }}" class="row g-3" id="bookAppointmentForm">
+                <input type="hidden" name="doctor_id" value="{{ selected_doctor_id }}">
+                <input type="hidden" name="date" value="{{ selected_date }}">
+                
+                <div class="col-md-8">
+                    <label for="appointment_time" class="form-label">Select Time Slot</label>
+                    <select class="form-select" id="appointment_time" name="appointment_time" required>
+                        <option value="">Choose a time...</option>
+                        {% for slot in available_slots %}
+                            <option value="{{ slot }}">{{ slot }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">&nbsp;</label>
+                    <button type="submit" class="btn btn-success w-100" name="book_appointment">
+                        <i class="fas fa-calendar-plus"></i> Book Appointment
+                    </button>
+                </div>
+            </form>
+            {% elif selected_doctor_id and selected_date %}
+            <div class="alert alert-warning mt-3">
+                <i class="fas fa-exclamation-triangle"></i>
+                No available slots for selected doctor and date. Please choose another date.
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Appointment List -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">My Appointments</h5>
+        </div>
+        <div class="card-body">
+            {% if appointments and appointments|length > 0 %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Time</th>
+                            <th>Doctor</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for appointment in appointments %}
+                        <tr>
+                            <td>
+                                {% if appointment.date %}
+                                    {{ appointment.date }}
+                                {% elif appointment.appointment_date %}
+                                    {{ appointment.appointment_date|string|truncate(10, True, '') }}
+                                {% else %}
+                                    N/A
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if appointment.appointment_time %}
+                                    {{ appointment.appointment_time }}
+                                {% elif appointment.time %}
+                                    {{ appointment.time }}
+                                {% else %}
+                                    N/A
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if appointment.doctor %}
+                                    {{ appointment.doctor }}
+                                {% else %}
+                                    {% for doctor in doctors %}
+                                        {% if doctor.id == appointment.doctor_id %}
+                                            Dr. {{ doctor.firstName }} {{ doctor.lastName }}
+                                        {% endif %}
+                                    {% endfor %}
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if appointment.status %}
+                                    {% set status_upper = appointment.status.upper() %}
+                                    <span class="badge 
+                                        {% if status_upper == 'COMPLETED' %}bg-success
+                                        {% elif status_upper == 'CANCELLED' %}bg-danger
+                                        {% elif status_upper in ['PENDING', 'UPCOMING', 'BOOKED'] %}bg-warning
+                                        {% else %}bg-secondary{% endif %}">
+                                        {{ appointment.status }}
+                                    </span>
+                                {% else %}
+                                    <span class="badge bg-secondary">Unknown</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if appointment.status and appointment.status.upper() in ['PENDING', 'UPCOMING', 'BOOKED'] %}
+                                <form method="POST" action="{{ url_for('patient.appointments') }}" 
+                                      style="display: inline;">
+                                    <input type="hidden" name="appointment_id" value="{{ appointment.id }}">
+                                    <button type="submit" name="cancel_appointment" 
+                                            class="btn btn-sm btn-outline-danger"
+                                            onclick="return confirm('Are you sure you want to cancel this appointment?');">
+                                        <i class="fas fa-times"></i> Cancel
+                                    </button>
+                                </form>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-4">
+                <i class="fas fa-calendar-times fa-3x text-muted mb-3"></i>
+                <h5>No appointments found</h5>
+                <p class="text-muted">You haven't booked any appointments yet.</p>
+                <p class="text-muted">Use the form above to book your first appointment.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Set minimum date to today using JavaScript
+    const today = new Date();
+    const yyyy = today.getFullYear();
+    const mm = String(today.getMonth() + 1).padStart(2, '0');
+    const dd = String(today.getDate()).padStart(2, '0');
+    const minDate = `${yyyy}-${mm}-${dd}`;
+    
+    const dateInput = document.getElementById('date');
+    if (dateInput) {
+        dateInput.min = minDate;
+        
+        // If no date is selected, set to today
+        if (!dateInput.value) {
+            dateInput.value = minDate;
+        }
+    }
+    
+    // Auto-check slots when doctor and date are selected
+    const doctorSelect = document.getElementById('doctor_id');
+    
+    function autoCheckSlots() {
+        if (doctorSelect.value && dateInput.value) {
+            document.getElementById('checkSlotsForm').submit();
+        }
+    }
+    
+    if (doctorSelect) {
+        doctorSelect.addEventListener('change', autoCheckSlots);
+    }
+    
+    if (dateInput) {
+        dateInput.addEventListener('change', autoCheckSlots);
+    }
+});
+</script>
+
 {% endblock %}

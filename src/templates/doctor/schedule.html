@@ -301,13 +301,32 @@
                                                 {% endif %}
                                             </div>
                                             <div>
-                                                <div>{{ appointment.patient.firstName }} {{ appointment.patient.lastName }}</div>
+                                                    <div>
+                                                    {% if appointment.patient %}
+                                                        {{ appointment.patient.firstName }} {{ appointment.patient.lastName }}
+                                                    {% else %}
+                                                        <!-- Try to get patient from patient_repo -->
+                                                        {% set patient = patient_repo.get_by_id(appointment.patient_id) if appointment.patient_id else None %}
+                                                        {% if patient %}
+                                                            {{ patient.firstName }} {{ patient.lastName }}
+                                                        {% else %}
+                                                            Unknown Patient
+                                                        {% endif %}
+                                                    {% endif %}
+                                                    </div>
                                                 <div class="text-muted small">ID: #PAT{{ "%03d" % appointment.patient_id }}</div>
                                             </div>
                                         </div>
                                     </td>
                                     <td>
-                                        <div>{{ appointment.patient.phone }}</div>
+                                        <div>
+                                            {% if appointment.patient and appointment.patient.phone %}
+                                                {{ appointment.patient.phone }}
+                                            {% else %}
+                                                {% set patient = patient_repo.get_by_id(appointment.patient_id) if appointment.patient_id else None %}
+                                                {{ patient.phone if patient else 'N/A' }}
+                                            {% endif %}
+                                        </div>
                                         <div class="text-muted small">
                                             {% if appointment.patient.email %}
                                                 {{ appointment.patient.email }}
@@ -521,7 +540,7 @@
     // Appointment actions
     function approveAppointment(appointmentId) {
         if (confirm('Approve this appointment?')) {
-            fetch(`/doctor/appointment/${appointmentId}/approve`, {
+            fetch(`/appointment/${appointmentId}/approve`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded',
@@ -546,7 +565,7 @@
     
     function rejectAppointment(appointmentId) {
         if (confirm('Reject this appointment?')) {
-            fetch(`/doctor/appointment/${appointmentId}/reject`, {
+            fetch(`/appointment/${appointmentId}/reject`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded',
@@ -603,81 +622,4 @@
     });
 </script>
 
-<style>
-    /* Custom styles for schedule */
-    .schedule-cell {
-        height: 50px;
-        cursor: pointer;
-        border: 1px solid #dee2e6;
-        transition: all 0.2s;
-    }
-    
-    .schedule-cell:hover {
-        background-color: #f8f9fa;
-        transform: scale(1.02);
-    }
-    
-    .schedule-cell.available {
-        background-color: #d4edda;
-    }
-    
-    .schedule-cell.booked {
-        background-color: #cce5ff;
-    }
-    
-    .schedule-cell.pending {
-        background-color: #fff3cd;
-    }
-    
-    .schedule-cell.unavailable {
-        background-color: #f8f9fa;
-    }
-    
-    .table-bordered th {
-        background-color: #f8f9fc;
-    }
-    
-    .nav-tabs .nav-link {
-        border: none;
-        border-bottom: 3px solid transparent;
-        color: #6c757d;
-        font-weight: 500;
-    }
-    
-    .nav-tabs .nav-link:hover {
-        border-bottom-color: #dee2e6;
-    }
-    
-    .nav-tabs .nav-link.active {
-        color: #4e73df;
-        border-bottom-color: #4e73df;
-        background-color: transparent;
-    }
-    
-    .border-left-primary {
-        border-left: 4px solid #4e73df !important;
-    }
-    
-    .border-left-success {
-        border-left: 4px solid #1cc88a !important;
-    }
-    
-    .border-left-warning {
-        border-left: 4px solid #f6c23e !important;
-    }
-    
-    .border-left-info {
-        border-left: 4px solid #36b9cc !important;
-    }
-    
-    .card {
-        border: none;
-        border-radius: 10px;
-    }
-    
-    .card-header {
-        background-color: #f8f9fc;
-        border-bottom: 1px solid #e3e6f0;
-    }
-</style>
 {% endblock %}

@@ -1,51 +1,222 @@
 {% extends "base.html" %}
 {% block content %}
-<h2>Patient Medical File - {{ patient.name if patient else 'Unknown' }}</h2>
-
-{% if patient %}
-    <div class="card">
-        <p><strong>Name:</strong> {{ patient.name }}</p>
-        <p><strong>Email:</strong> {{ patient.email }}</p>
-        <p><strong>Phone:</strong> {{ patient.phone }}</p>
+<div class="container-fluid py-4">
+    <!-- Header Section -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h2 fw-bold text-primary">
+                <i class="fas fa-file-medical me-2"></i>
+                Patient Medical File
+            </h1>
+            <p class="text-muted mb-0">View and add medical records for {{ patient.firstName }} {{ patient.lastName }}</p>
+        </div>
+        <div>
+            <a href="{{ url_for('doctor.manage_patients') }}" class="btn btn-outline-primary">
+                <i class="fas fa-arrow-left me-2"></i>Back to Patients
+            </a>
+        </div>
     </div>
 
-    <h3 style="margin-top:14px;">Add Diagnosis</h3>
-    <form method="post" action="{{ url_for('doctor.diagnose', pid=patient.id) }}" enctype="multipart/form-data">
-        <label class="label">Diagnosis</label>
-        <textarea class="input-box" name="diagnosis" required></textarea>
-
-        <label class="label">Treatment</label>
-        <textarea class="input-box" name="treatment" required></textarea>
-
-        <label class="label">Follow-up Date</label>
-        <input class="input-box" type="date" name="followup">
-
-        <label class="label">Attach File</label>
-        <input class="input-box" type="file" name="file">
-
-        <button class="button" type="submit">Save</button>
-    </form>
-
-    <hr>
-    <h3>Previous Diagnoses</h3>
-    {% if diagnosis %}
-        {% for d in diagnosis %}
-            <div class="card">
-                <p class="small">{{ d.date }} — {{ d.doctor_name }}</p>
-                <p><strong>Diagnosis:</strong> {{ d.text }}</p>
-                <p><strong>Treatment:</strong> {{ d.treatment }}</p>
-                <div class="actions" style="margin-top:8px;">
-                    <form method="post" action="{{ url_for('doctor.delete_diagnosis', did=d.id) }}" style="display:inline;">
-                        <button class="button secondary" type="submit" onclick="return confirm('Delete this record?');">Delete</button>
-                    </form>
-                    <a class="button" href="{{ url_for('doctor.edit_diagnosis', did=d.id) }}">Edit</a>
+    {% if patient %}
+    <!-- Patient Info Card -->
+    <div class="card shadow mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0"><i class="fas fa-user me-2"></i>Patient Information</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <p><strong>Name:</strong> {{ patient.firstName }} {{ patient.lastName }}</p>
+                    <p><strong>Patient ID:</strong> #PAT{{ "%03d" % patient.id }}</p>
+                    <p><strong>Gender:</strong> {{ patient.gender|title }}</p>
+                    {% if patient.age is not none %}
+                        <p><strong>Age:</strong> {{ patient.age }} years</p>
+                    {% endif %}
+                </div>
+                <div class="col-md-6">
+                    <p><strong>Phone:</strong> {{ patient.phone }}</p>
+                    <p><strong>Date of Birth:</strong> {{ patient.birth_date if patient.birth_date else 'Not specified' }}</p>
+                    <p><strong>Address:</strong> {{ patient.address if patient.address else 'Not specified' }}</p>
                 </div>
             </div>
-        {% endfor %}
+        </div>
+    </div>
+
+    <!-- Add Diagnosis Form -->
+    <div class="card shadow mb-4">
+        <div class="card-header bg-success text-white">
+            <h5 class="mb-0"><i class="fas fa-plus-circle me-2"></i>Add New Diagnosis</h5>
+        </div>
+        <div class="card-body">
+            <form method="post" action="{{ url_for('doctor.diagnose', pid=patient.id) }}" enctype="multipart/form-data">
+                <input type="hidden" name="csrf_token" value="{{ session.get('csrf_token') }}">
+                
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label for="diagnosis" class="form-label">Diagnosis *</label>
+                        <textarea class="form-control" id="diagnosis" name="diagnosis" rows="4" required 
+                                  placeholder="Enter diagnosis details..."></textarea>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="treatment" class="form-label">Treatment *</label>
+                        <textarea class="form-control" id="treatment" name="treatment" rows="4" required 
+                                  placeholder="Enter treatment plan..."></textarea>
+                    </div>
+                </div>
+                
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <label for="followup" class="form-label">Follow-up Date</label>
+                        <input type="date" class="form-control" id="followup" name="followup">
+                    </div>
+                    <div class="col-md-4">
+                        <label for="appointment_id" class="form-label">Associated Appointment</label>
+                        <select class="form-select" id="appointment_id" name="appointment_id">
+                            <option value="">Select appointment (optional)</option>
+                            {% if appointments %}
+                                {% for app in appointments %}
+                                    <option value="{{ app.id }}">
+                                        {{ app.date }} {{ app.appointment_time if app.appointment_time else '' }} 
+                                        ({{ app.status|title }})
+                                    </option>
+                                {% endfor %}
+                            {% endif %}
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="file" class="form-label">Attach File</label>
+                        <input type="file" class="form-control" id="file" name="file" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx">
+                        <small class="text-muted">PDF, Images, or Documents (optional)</small>
+                    </div>
+                </div>
+                
+                <div class="alert alert-info">
+                    <small>
+                        <i class="fas fa-info-circle me-1"></i>
+                        Fields marked with * are required. File upload is optional.
+                    </small>
+                </div>
+                
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save me-2"></i>Save Diagnosis
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Previous Diagnoses -->
+    <div class="card shadow">
+        <div class="card-header bg-info text-white">
+            <h5 class="mb-0"><i class="fas fa-history me-2"></i>Medical History</h5>
+        </div>
+        <div class="card-body">
+            {% if diagnosis %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Doctor</th>
+                                <th>Diagnosis</th>
+                                <th>Treatment</th>
+                                <th>Follow-up</th>
+                                <th>Attachments</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for d in diagnosis %}
+                            <tr>
+                                <td>{{ d.date }}</td>
+                                <td>{{ d.doctor_name }}</td>
+                                <td>
+                                    <div style="max-width: 250px; overflow: hidden; text-overflow: ellipsis;">
+                                        {{ d.text }}
+                                    </div>
+                                </td>
+                                <td>
+                                    <div style="max-width: 250px; overflow: hidden; text-overflow: ellipsis;">
+                                        {{ d.treatment }}
+                                    </div>
+                                </td>
+                                <td>{{ d.followup if d.followup else '—' }}</td>
+                                <td>
+                                    {% if d.files %}
+                                        {% for file in d.files %}
+                                            <a href="/static/{{ file.file_path.replace('\\', '/') }}" 
+                                               target="_blank" class="badge bg-secondary me-1">
+                                                <i class="fas fa-paperclip"></i> {{ file.filename }}
+                                            </a>
+                                        {% endfor %}
+                                    {% else %}
+                                        <span class="text-muted">None</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+
+                                        <button class="btn btn-outline-info" disabled title="Edit/Delete coming soon">
+                                            <i class="fas fa-cog"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-clipboard-list fa-4x text-muted mb-3"></i>
+                    <h4 class="text-muted">No Medical Records</h4>
+                    <p class="text-muted">No diagnoses recorded for this patient yet.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
     {% else %}
-        <p class="small">No previous diagnoses.</p>
+    <div class="alert alert-danger">
+        <i class="fas fa-exclamation-triangle me-2"></i>
+        Patient not found.
+    </div>
     {% endif %}
-{% else %}
-    <p class="small">Patient not found.</p>
-{% endif %}
+</div>
+
+<style>
+    .card {
+        border: none;
+        border-radius: 10px;
+        margin-bottom: 20px;
+    }
+    
+    .card-header {
+        border-radius: 10px 10px 0 0 !important;
+    }
+    
+    .btn-group-sm .btn {
+        padding: 0.25rem 0.5rem;
+    }
+    
+    textarea.form-control {
+        resize: vertical;
+        min-height: 100px;
+    }
+</style>
+
+<script>
+    // Set minimum date for follow-up to today
+    document.addEventListener('DOMContentLoaded', function() {
+        const followupInput = document.getElementById('followup');
+        if (followupInput) {
+            const today = new Date().toISOString().split('T')[0];
+            followupInput.min = today;
+        }
+        
+        // Initialize tooltips
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[title]'));
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
+    });
+</script>
 {% endblock %}

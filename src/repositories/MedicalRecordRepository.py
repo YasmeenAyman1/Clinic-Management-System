@@ -45,20 +45,29 @@ class MedicalRecordRepository(BaseRepository):
         )
         rows = cursor.fetchall()
         cursor.close()
-        return [
-            MedicalRecord(
-                id=row.get("id"),
-                diagnoisis=row.get("diagnosis"),
-                treatment=row.get("treatment"),
-                uploaded_by_user_id=row.get("uploaded_by_user_id"),
-                upload_date=row.get("upload_date"),
-                follow_up_date=row.get("follow_up_date"),
-                doctor_id=row.get("doctor_id"),
-                patient_id=row.get("patient_id"),
-                appointment_id=row.get("appointment_id"),
-                created_at=row.get("created_at"),
-            ) for row in rows
-        ] if rows else []
+        
+        records = []
+        for row in rows:
+            try:
+                # Create MedicalRecord using dictionary unpacking
+                record_data = {
+                    'id': row.get("id"),
+                    'patient_id': row.get("patient_id"),
+                    'doctor_id': row.get("doctor_id"),
+                    'diagnosis': row.get("diagnosis"),  # Use 'diagnosis' not 'diagnoisis'
+                    'treatment': row.get("treatment"),
+                    'uploaded_by_user_id': row.get("uploaded_by_user_id"),
+                    'upload_date': row.get("upload_date"),
+                    'follow_up_date': row.get("follow_up_date"),
+                    'appointment_id': row.get("appointment_id"),
+                    'created_at': row.get("created_at"),
+                }
+                records.append(MedicalRecord(**record_data))
+            except Exception as e:
+                print(f"Error creating MedicalRecord object: {e}")
+                print(f"Row data: {row}")
+                continue
+        return records
 
     def get_by_id(self, record_id: int) -> Optional[MedicalRecord]:
         cursor = self.db.cursor(dictionary=True)
@@ -72,20 +81,29 @@ class MedicalRecordRepository(BaseRepository):
         )
         row = cursor.fetchone()
         cursor.close()
+        
         if not row:
             return None
-        return MedicalRecord(
-            id=row.get("id"),
-            diagnoisis=row.get("diagnosis"),
-            treatment=row.get("treatment"),
-            uploaded_by_user_id=row.get("uploaded_by_user_id"),
-            upload_date=row.get("upload_date"),
-            follow_up_date=row.get("follow_up_date"),
-            doctor_id=row.get("doctor_id"),
-            patient_id=row.get("patient_id"),
-            appointment_id=row.get("appointment_id"),
-            created_at=row.get("created_at"),
-        )
+        
+        try:
+            record_data = {
+                'id': row.get("id"),
+                'patient_id': row.get("patient_id"),
+                'doctor_id': row.get("doctor_id"),
+                'diagnosis': row.get("diagnosis"),  # Use 'diagnosis' not 'diagnoisis'
+                'treatment': row.get("treatment"),
+                'uploaded_by_user_id': row.get("uploaded_by_user_id"),
+                'upload_date': row.get("upload_date"),
+                'follow_up_date': row.get("follow_up_date"),
+                'appointment_id': row.get("appointment_id"),
+                'created_at': row.get("created_at"),
+            }
+            return MedicalRecord(**record_data)
+        except Exception as e:
+            print(f"Error creating MedicalRecord object: {e}")
+            print(f"Row data: {row}")
+            return None
+
     def get_patient_records_count(self, patient_id: int) -> int:
         """
         Get the count of medical records for a specific patient
@@ -135,7 +153,15 @@ class MedicalRecordRepository(BaseRepository):
             )
             result = cursor.fetchone()
             cursor.close()
-            return result['last_visit'].strftime('%Y-%m-%d') if result and result['last_visit'] else None
+            
+            if result and result['last_visit']:
+                # Handle both string and datetime objects
+                last_visit = result['last_visit']
+                if hasattr(last_visit, 'strftime'):
+                    return last_visit.strftime('%Y-%m-%d')
+                else:
+                    return str(last_visit)
+            return None
         except Exception as e:
             print(f"Error getting last visit: {e}")
             return None

@@ -1,11 +1,12 @@
 from flask import Blueprint, flash, redirect, render_template, request, session, url_for, current_app
 import os
-from datetime import date
+from datetime import date, datetime
 from werkzeug.utils import secure_filename
 
 from repositories.repositories_factory import RepositoryFactory
 
 doctor_bp = Blueprint('doctor', __name__, url_prefix='/doctor')
+    
 user_repo = RepositoryFactory.get_repository("user")
 doctor_repo = RepositoryFactory.get_repository("doctor")
 appointment_repo = RepositoryFactory.get_repository("appointment")
@@ -45,11 +46,6 @@ def approve_appointment(appointment_id):
         flash('Access denied.', category='danger')
         return redirect(url_for('auth.login'))
 
-    csrf_token = request.form.get('csrf_token')
-    if csrf_token != session.get('csrf_token'):
-        flash('Invalid CSRF token', category='danger')
-        return redirect(url_for('doctor.doctor_home'))
-
     # Resolve acting doctor's id
     if session.get('role') == 'doctor':
         doctor = doctor_repo.get_by_user_id(session.get('user_id'))
@@ -81,11 +77,6 @@ def reject_appointment(appointment_id):
         flash('Access denied.', category='danger')
         return redirect(url_for('auth.login'))
 
-    csrf_token = request.form.get('csrf_token')
-    if csrf_token != session.get('csrf_token'):
-        flash('Invalid CSRF token', category='danger')
-        return redirect(url_for('doctor.doctor_home'))
-
     # Resolve acting doctor's id
     if session.get('role') == 'doctor':
         doctor = doctor_repo.get_by_user_id(session.get('user_id'))
@@ -109,38 +100,16 @@ def reject_appointment(appointment_id):
         flash('Failed to reject appointment.', category='danger')
     return redirect(url_for('doctor.doctor_home'))
 
-# @doctor_bp.route('/patient/<int:pid>/medical_file')
-# def medical_file(pid):
-#     if not session.get("user_id"):
-#         flash("Please log in first.", category="info")
-#         return redirect(url_for("auth.login"))
-
-#     if session.get("role") != "doctor":
-#         flash("Access denied. Doctor access required.", category="danger")
-#         return redirect(url_for("auth.dashboard"))
-
-#     patient = patient_repo.get_by_id(pid)
-#     if not patient:
-#         flash("Patient not found.", category="warning")
-#         return redirect(url_for("doctor.doctor_home"))
-
-#     records = medical_repo.get_records_by_patient(pid)
-#     diagnosis_list = []
-#     for r in records:
-#         doc = doctor_repo.get_by_id(r.doctor_id) if r.doctor_id else None
-#         files = uploaded_repo.get_files_by_record(r.id) if r.id else []
-#         files_data = [{"filename": os.path.basename(f.file_path), "file_path": f.file_path} for f in files]
-#         diagnosis_list.append({
-#             "id": r.id,
-#             "date": r.upload_date,
-#             "doctor_name": f"{doc.firstName} {doc.lastName}" if doc else "Unknown",
-#             "text": r.diagnoisis,
-#             "treatment": r.treatment,
-#             "followup": r.follow_up_date,
-#             "files": files_data,
-#         })
-
-#     return render_template('doctor/medical_file.html', patient=patient, diagnosis=diagnosis_list)
+@doctor_bp.route('/prescriptions')
+def prescriptions():
+    if not session.get("user_id") or session.get("role") != "doctor":
+        flash("Access denied.", category="danger")
+        return redirect(url_for("auth.login"))
+    
+    doctor = doctor_repo.get_by_user_id(session.get('user_id'))
+    
+    return render_template('doctor/prescriptions.html', doctor=doctor)
+    
 @doctor_bp.route('/patient/<int:pid>/medical_file')
 def medical_file(pid):
     if not session.get("user_id"):
@@ -183,12 +152,13 @@ def medical_file(pid):
     for r in records:
         doc = doctor_repo.get_by_id(r.doctor_id) if r.doctor_id else None
         files = uploaded_repo.get_files_by_record(r.id) if r.id else []
-        files_data = [{"filename": os.path.basename(f.file_path), "file_path": f.file_path} for f in files]
+        files_data = [{"filename": os.path.basename(f.file_path), 
+                      "file_path": f.file_path.replace('\\', '/')} for f in files]  # FIX HERE
         diagnosis_list.append({
             "id": r.id,
             "date": r.upload_date,
             "doctor_name": f"{doc.firstName} {doc.lastName}" if doc else "Unknown",
-            "text": r.diagnoisis,
+            "text": r.diagnosis,
             "treatment": r.treatment,
             "followup": r.follow_up_date,
             "files": files_data,
@@ -344,12 +314,18 @@ def search_patient():
         last_visit = medical_repo.get_last_visit(patient.id)
         patient_last_visits[patient.id] = last_visit
     
+    # Get recent patients for the "initial state" section
+    recent_patients = []
+    if not search_query:  # Only get recent patients when not searching
+        recent_patients = patient_repo.get_all_patients()[:5] if hasattr(patient_repo, 'get_all_patients') else []
+    
     return render_template('doctor/search_patient.html', 
                          search_query=search_query, 
                          patients=patients, 
                          doctor=doctor,
                          patient_records_count=patient_records_count,
-                         patient_last_visits=patient_last_visits)
+                         patient_last_visits=patient_last_visits,
+                         recent_patients=recent_patients)  # Add this
 
 @doctor_bp.route('/patients')
 def manage_patients():
@@ -420,11 +396,6 @@ def add_availability():
         flash('Access denied.', category='danger')
         return redirect(url_for('auth.login'))
 
-    csrf_token = request.form.get('csrf_token')
-    if csrf_token != session.get('csrf_token'):
-        flash('Invalid CSRF token', category='danger')
-        return redirect(url_for('doctor.schedule'))
-
     date = request.form.get('date')
     start_time = request.form.get('start_time')
     end_time = request.form.get('end_time')
@@ -439,6 +410,19 @@ def add_availability():
         flash('Availability added.', category='success')
     else:
         flash('Failed to add availability (may conflict).', category='danger')
+    return redirect(url_for('doctor.schedule'))
+
+@doctor_bp.route('/availability/<int:av_id>/delete', methods=['POST'])
+def delete_availability(av_id):
+    if not session.get('user_id') or session.get('role') != 'doctor':
+        flash('Access denied.', category='danger')
+        return redirect(url_for('auth.login'))
+    
+    success = availability_repo.delete_availability(av_id)
+    if success:
+        flash('Availability removed.', category='success')
+    else:
+        flash('Failed to remove availability.', category='danger')
     return redirect(url_for('doctor.schedule'))
 
 @doctor_bp.route('/schedule', methods=['GET'])
@@ -462,8 +446,32 @@ def schedule():
     except Exception:
         availability = []
     
-    # Get appointments
+    # Get appointments with patient information
     appointments = appointment_repo.get_by_doctor_id(doctor.id, None)  # Get all appointments
+    
+    # Enhance appointments with patient data
+    enhanced_appointments = []
+    for appointment in appointments:
+        # Get patient information
+        patient = patient_repo.get_by_id(appointment.patient_id) if appointment.patient_id else None
+        
+        # Create enhanced appointment dictionary
+        enhanced_appointment = {
+            'id': appointment.id,
+            'date': appointment.date,
+            'appointment_time': appointment.appointment_time if hasattr(appointment, 'appointment_time') else None,
+            'patient_id': appointment.patient_id,
+            'patient': {
+                'firstName': patient.firstName if patient else 'Unknown',
+                'lastName': patient.lastName if patient else 'Patient',
+                'phone': patient.phone if patient else 'N/A',
+                'email': getattr(patient, 'email', 'N/A') if patient else 'N/A'
+            } if patient else None,
+            'type': getattr(appointment, 'type', 'regular'),
+            'status': appointment.status
+        }
+        enhanced_appointments.append(enhanced_appointment)
+    
     pending_appointments = appointment_repo.list_pending_by_doctor(doctor.id)
     
     # Get statistics
@@ -473,7 +481,16 @@ def schedule():
     # Get week's appointments (next 7 days)
     from datetime import timedelta
     week_end = today + timedelta(days=7)
-    week_appointments_count = 0  # You'll need to implement this in your appointment_repo
+    
+    # Count week appointments
+    week_appointments_count = 0
+    for app in enhanced_appointments:
+        try:
+            app_date = datetime.strptime(str(app['date']), '%Y-%m-%d').date() if app['date'] else None
+            if app_date and today <= app_date <= week_end:
+                week_appointments_count += 1
+        except Exception:
+            continue
     
     # Count available slots
     available_slots_count = len(availability) if availability else 0
@@ -482,116 +499,40 @@ def schedule():
     return render_template('doctor/schedule.html',
                          doctor=doctor,
                          availability=availability,
-                         appointments=appointments,
+                         appointments=enhanced_appointments,  # Use enhanced appointments
                          today=today_str,
                          today_appointments_count=today_appointments_count,
                          week_appointments_count=week_appointments_count,
                          available_slots_count=available_slots_count,
                          pending_appointments_count=pending_appointments_count)
 
-@doctor_bp.route('/availability/<int:av_id>/delete', methods=['POST'])
-def delete_availability(av_id):
-    if not session.get('user_id') or session.get('role') != 'doctor':
-        flash('Access denied.', category='danger')
-        return redirect(url_for('auth.login'))
 
-    csrf_token = request.form.get('csrf_token')
-    if csrf_token != session.get('csrf_token'):
-        flash('Invalid CSRF token', category='danger')
-        return redirect(url_for('doctor.schedule'))
+@doctor_bp.app_template_filter('get_day_name')
+def get_day_name(date_str):
+    try:
+        date_obj = datetime.strptime(date_str, '%Y-%m-%d')
+        return date_obj.strftime('%A')
+    except Exception:
+        return "Unknown"
 
-    success = availability_repo.delete_availability(av_id)
-    if success:
-        flash('Availability removed.', category='success')
-    else:
-        flash('Failed to remove availability.', category='danger')
-    return redirect(url_for('doctor.schedule'))
+@doctor_bp.app_template_filter('time_to_minutes')
+def time_to_minutes(time_str):
+    try:
+        if ':' in time_str:
+            hours, minutes = time_str.split(':')
+            return int(hours) * 60 + int(minutes)
+        return 0
+    except Exception:
+        return 0
 
-# @doctor_bp.route('/profile/<username>')
-# def doctor_profile(username):
-#     if not session.get("user_id"):
-#         flash("Please log in first.", category="info")
-#         return redirect(url_for("auth.login"))
+@doctor_bp.app_template_filter('is_past_date')
+def is_past_date(date_str):
+    try:
+        date_obj = datetime.strptime(date_str, '%Y-%m-%d').date()
+        return date_obj < datetime.today().date()
+    except Exception:
+        return False
     
-#     user = user_repo.get_by_username(username)
-#     if not user:
-#         flash("Doctor not found.", category="warning")
-#         return redirect(url_for("auth.dashboard"))
-    
-#     doctor = doctor_repo.get_by_user_id(user.id)
-#     if not doctor:
-#         flash("Doctor profile not found.", category="warning")
-#         return redirect(url_for("auth.dashboard"))
-    
-#     return render_template('doctor/doctor_profile.html', doctor=doctor, user=user)
-
-# @doctor_bp.route('/reports')
-# def view_reports():
-#     if not session.get("user_id") or session.get("role") != "doctor":
-#         flash("Access denied.", category="danger")
-#         return redirect(url_for("auth.login"))
-#     return render_template('doctor/view_reports.html')
-
-# # Fix for diagnose route in doctor blueprint
-# @doctor_bp.route('/diagnose/<int:pid>', methods=['POST'])
-# def diagnose(pid):
-#     if not session.get("user_id") or session.get("role") not in ["doctor", "assistant"]:
-#         flash("Access denied.", category="danger")
-#         return redirect(url_for("auth.login"))
-
-#     diagnosis_text = request.form.get('diagnosis', '').strip()
-#     treatment_text = request.form.get('treatment', '').strip()
-#     followup = request.form.get('followup') or None
-#     appointment_id = request.form.get('appointment_id', type=int)  # ADD THIS
-
-#     if not diagnosis_text or not treatment_text:
-#         flash("Diagnosis and treatment are required.", category="danger")
-#         return redirect(url_for('doctor.medical_file', pid=pid))
-
-#     # Resolve doctor ID
-#     if session.get('role') == 'assistant':
-#         assistant = RepositoryFactory.get_repository('assistant').get_by_user_id(session.get('user_id'))
-#         doctor_id = assistant.doctor_id if assistant else None
-#     else:
-#         doctor = doctor_repo.get_by_user_id(session.get('user_id'))
-#         doctor_id = doctor.id if doctor else None
-
-#     # CREATE RECORD WITH APPOINTMENT_ID
-#     record = medical_repo.create_record(
-#         patient_id=pid,
-#         doctor_id=doctor_id,
-#         diagnosis=diagnosis_text,
-#         treatment=treatment_text,
-#         follow_up_date=followup,
-#         appointment_id=appointment_id,  # PASS THIS
-#         uploaded_by_user_id=session.get('user_id')
-#     )
-
-#     # Handle file upload
-#     if record and 'file' in request.files:
-#         file = request.files['file']
-#         if file and file.filename:
-#             filename = secure_filename(file.filename)
-#             uploads_dir = os.path.join(current_app.static_folder, 'uploads')
-#             os.makedirs(uploads_dir, exist_ok=True)
-#             filepath = os.path.join(uploads_dir, filename)
-#             file.save(filepath)
-#             rel_path = os.path.join('uploads', filename)
-#             uploaded_repo.save_file(
-#                 filename, 
-#                 rel_path, 
-#                 session.get('user_id'), 
-#                 record_id=record.id, 
-#                 patient_id=pid, 
-#                 file_type=file.mimetype
-#             )
-
-#     if record:
-#         flash("Diagnosis saved successfully.", category="success")
-#     else:
-#         flash("Failed to save diagnosis.", category="danger")
-
-#     return redirect(url_for('doctor.medical_file', pid=pid))
 
 @doctor_bp.route('/diagnose/<int:pid>', methods=['POST'])
 def diagnose(pid):
@@ -635,12 +576,18 @@ def diagnose(pid):
             filename = secure_filename(file.filename)
             uploads_dir = os.path.join(current_app.static_folder, 'uploads')
             os.makedirs(uploads_dir, exist_ok=True)
+            
+            # Use forward slashes for URL compatibility
             filepath = os.path.join(uploads_dir, filename)
+            # Save the file
             file.save(filepath)
-            rel_path = os.path.join('uploads', filename)
+            
+            # Use forward slash for the relative path
+            rel_path = 'uploads/' + filename  # Use forward slash
+            
             uploaded_repo.save_file(
                 filename, 
-                rel_path, 
+                rel_path,  # Now uses forward slash
                 session.get('user_id'), 
                 record_id=record.id, 
                 patient_id=pid, 

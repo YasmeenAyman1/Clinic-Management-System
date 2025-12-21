@@ -1,6 +1,7 @@
 from typing import List, Optional
 from models.patient_model import Patient
 from repositories.BaseRepository import BaseRepository
+
 #--------------------------------->>>PatientRepository<<<--------------------------------- 
 class PatientRepository(BaseRepository):
     def create_patient(
@@ -13,6 +14,7 @@ class PatientRepository(BaseRepository):
         birth_date: Optional[str] = None,
         address: Optional[str] = None,
     ) -> Optional[Patient]:
+        cursor = None
         try:
             print(f"DEBUG create_patient: firstName={first_name}, lastName={last_name}, gender={gender}, birth_date={birth_date}, phone={phone}, address={address}, user_id={user_id}")
             
@@ -46,6 +48,7 @@ class PatientRepository(BaseRepository):
             print(f"DEBUG: Patient inserted with ID: {patient_id}")
             
             cursor.close()
+            cursor = None
             
             # Get the created patient
             created_patient = self.get_by_id(patient_id)
@@ -64,6 +67,9 @@ class PatientRepository(BaseRepository):
                 print(f"SQL State: {e.sqlstate}")
             # Re-raise the exception so the calling code can handle it
             raise e
+        finally:
+            if cursor is not None:
+                cursor.close()
     
     def search_patients(self, search_term: str) -> List[Patient]:
         """
@@ -75,6 +81,7 @@ class PatientRepository(BaseRepository):
         Returns:
             List of Patient objects matching the search
         """
+        cursor = None
         try:
             cursor = self.db.cursor(dictionary=True)
             
@@ -113,23 +120,16 @@ class PatientRepository(BaseRepository):
             
             rows = cursor.fetchall()
             cursor.close()
+            cursor = None
             
             patients = []
             for row in rows:
                 try:
-                    # Convert row keys to match Patient model parameter names
-                    patient_data = {
-                        'id': row['id'],
-                        'firstName': row['firstName'],
-                        'lastName': row['lastName'],
-                        'gender': row['gender'],
-                        'phone': row['phone'],
-                        'birth_date': row['birth_date'],
-                        'address': row['address'],
-                        'user_id': row['user_id'],
-                        'created_at': row['created_at']
-                    }
-                    patients.append(Patient(**patient_data))
+                    # Create patient
+                    patient = Patient(**row)
+                    # Calculate age
+                    patient.age = self.calculate_age_from_birthdate(patient.birth_date)
+                    patients.append(patient)
                 except Exception as e:
                     print(f"Error creating Patient object from row: {e}")
                     continue
@@ -139,84 +139,122 @@ class PatientRepository(BaseRepository):
         except Exception as e:
             print(f"Error searching patients: {e}")
             return []
-        
-    def get_by_id(self, patient_id: int) -> Optional[Patient]:
-        cursor = self.db.cursor(dictionary=True)
-        cursor.execute(
-            """
-            SELECT id, firstName, lastName, gender, phone, birth_date, address, user_id, create_at AS created_at
-            FROM patient
-            WHERE id = %s
-            """,
-            (patient_id,),
-        )
-        row = cursor.fetchone()
-        cursor.close()
-        
-        if row:
-            try:
-                # The SQL query order MUST match Patient model constructor parameter order
-                return Patient(**row)
-            except Exception as e:
-                print(f"Error creating Patient object in get_by_id: {e}")
-                print(f"Row data: {row}")
-                return None
-        return None
-
-    def get_by_user_id(self, user_id: int) -> Optional[Patient]:
-        cursor = self.db.cursor(dictionary=True)
-        cursor.execute(
-            """
-            SELECT id, firstName, lastName, gender, phone, birth_date, address, user_id, create_at AS created_at
-            FROM patient
-            WHERE user_id = %s
-            """,
-            (user_id,),
-        )
-        row = cursor.fetchone()
-        cursor.close()
-        
-        if row:
-            try:
-                return Patient(**row)
-            except Exception as e:
-                print(f"Error creating Patient object in get_by_user_id: {e}")
-                return None
-        return None
-
-    def update_patient(self, patient_id: int, first_name: str, last_name: str, phone: str, birth_date: str, address: str) -> bool:
-        cursor = self.db.cursor()
-        try:
-            cursor.execute(
-                "UPDATE patient SET firstName = %s, lastName = %s, phone = %s, birth_date = %s, address = %s WHERE id = %s",
-                (first_name, last_name, phone, birth_date, address, patient_id)
-            )
-            self.db.commit()
-            return True
-        except Exception as e:
-            self.db.rollback()
-            print(f"Error updating patient: {e}")
-            return False
         finally:
-            cursor.close()
-            
-    def get_all_patients(self) -> List[Patient]:
+            if cursor is not None:
+                cursor.close()
+    
+    def get_by_id(self, patient_id: int) -> Optional[Patient]:
+        cursor = None
         try:
             cursor = self.db.cursor(dictionary=True)
             cursor.execute(
                 """
                 SELECT id, firstName, lastName, gender, phone, birth_date, address, user_id, create_at AS created_at
                 FROM patient
+                WHERE id = %s
+                """,
+                (patient_id,),
+            )
+            row = cursor.fetchone()
+            cursor.close()
+            cursor = None
+            
+            if row:
+                try:
+                    patient = Patient(**row)
+                    # Calculate age
+                    patient.age = self.calculate_age_from_birthdate(patient.birth_date)
+                    return patient
+                except Exception as e:
+                    print(f"Error creating Patient object in get_by_id: {e}")
+                    print(f"Row data: {row}")
+                    return None
+            return None
+        finally:
+            if cursor is not None:
+                cursor.close()
+
+    def get_by_user_id(self, user_id: int) -> Optional[Patient]:
+        cursor = None
+        try:
+            cursor = self.db.cursor(dictionary=True)
+            cursor.execute(
+                """
+                SELECT id, firstName, lastName, gender, phone, birth_date, address, user_id, create_at AS created_at
+                FROM patient
+                WHERE user_id = %s
+                """,
+                (user_id,),
+            )
+            row = cursor.fetchone()
+            cursor.close()
+            cursor = None
+            
+            if row:
+                try:
+                    patient = Patient(**row)
+                    # Calculate age
+                    patient.age = self.calculate_age_from_birthdate(patient.birth_date)
+                    return patient
+                except Exception as e:
+                    print(f"Error creating Patient object in get_by_user_id: {e}")
+                    return None
+            return None
+        finally:
+            if cursor is not None:
+                cursor.close()
+
+    def update_patient(self, patient_id: int, first_name: str, last_name: str, phone: str, birth_date: str, address: str) -> bool:
+        cursor = None
+        try:
+            cursor = self.db.cursor()
+            cursor.execute(
+                "UPDATE patient SET firstName = %s, lastName = %s, phone = %s, birth_date = %s, address = %s WHERE id = %s",
+                (first_name, last_name, phone, birth_date, address, patient_id)
+            )
+            self.db.commit()
+            cursor.close()
+            cursor = None
+            return True
+        except Exception as e:
+            self.db.rollback()
+            print(f"Error updating patient: {e}")
+            return False
+        finally:
+            if cursor is not None:
+                cursor.close()
+            
+    def get_all_patients(self) -> List[Patient]:
+        cursor = None
+        try:
+            cursor = self.db.cursor(dictionary=True)
+            cursor.execute(
+                """
+                SELECT 
+                    id, 
+                    firstName, 
+                    lastName, 
+                    gender, 
+                    phone, 
+                    birth_date, 
+                    address, 
+                    user_id, 
+                    create_at AS created_at
+                FROM patient
                 ORDER BY create_at DESC
                 """
             )
             rows = cursor.fetchall()
             cursor.close()
+            cursor = None
             
             patients = []
             for row in rows:
                 try:
-                    patients.append(Patient(**row))
+                    patient = Patient(**row)
+                    # Calculate age
+                    patient.age = self.calculate_age_from_birthdate(patient.birth_date)
+                    patients.append(patient)
                 except Exception as e:
                     print(f"Error creating Patient object: {e}")
                     continue
@@ -224,6 +262,9 @@ class PatientRepository(BaseRepository):
         except Exception as e:
             print(f"Error getting all patients: {e}")
             return []
+        finally:
+            if cursor is not None:
+                cursor.close()
         
     def get_new_patients_this_month(self) -> int:
         """
@@ -232,6 +273,7 @@ class PatientRepository(BaseRepository):
         Returns:
             Number of new patients this month
         """
+        cursor = None
         try:
             cursor = self.db.cursor(dictionary=True)
             cursor.execute(
@@ -244,12 +286,14 @@ class PatientRepository(BaseRepository):
             )
             result = cursor.fetchone()
             cursor.close()
+            cursor = None
             return result['count'] if result else 0
         except Exception as e:
             print(f"Error getting new patients this month: {e}")
             return 0
-    
-    # ADD THESE MISSING METHODS:
+        finally:
+            if cursor is not None:
+                cursor.close()
     
     def get_patient_records_count(self, patient_id: int) -> int:
         """
@@ -261,8 +305,8 @@ class PatientRepository(BaseRepository):
         Returns:
             Number of medical records
         """
+        cursor = None
         try:
-            # You need to import MedicalRecordRepository or use direct SQL
             cursor = self.db.cursor(dictionary=True)
             cursor.execute(
                 """
@@ -274,10 +318,14 @@ class PatientRepository(BaseRepository):
             )
             result = cursor.fetchone()
             cursor.close()
+            cursor = None
             return result['count'] if result else 0
         except Exception as e:
             print(f"Error getting patient records count: {e}")
             return 0
+        finally:
+            if cursor is not None:
+                cursor.close()
     
     def get_last_visit(self, patient_id: int):
         """
@@ -289,6 +337,7 @@ class PatientRepository(BaseRepository):
         Returns:
             Last visit date or None
         """
+        cursor = None
         try:
             cursor = self.db.cursor(dictionary=True)
             cursor.execute(
@@ -301,7 +350,36 @@ class PatientRepository(BaseRepository):
             )
             result = cursor.fetchone()
             cursor.close()
+            cursor = None
             return result['last_visit'] if result and result['last_visit'] else None
         except Exception as e:
             print(f"Error getting last visit: {e}")
+            return None
+        finally:
+            if cursor is not None:
+                cursor.close()
+        
+    def calculate_age_from_birthdate(self, birth_date):
+        """Calculate age from birth date in Python."""
+        if not birth_date:
+            return None
+        
+        try:
+            from datetime import datetime
+            
+            if isinstance(birth_date, str):
+                # Convert string to date
+                birth_date = datetime.strptime(birth_date, '%Y-%m-%d').date()
+            elif isinstance(birth_date, datetime):
+                birth_date = birth_date.date()
+            
+            today = datetime.today().date()
+            age = today.year - birth_date.year
+            
+            # Adjust if birthday hasn't occurred this year
+            if (today.month, today.day) < (birth_date.month, birth_date.day):
+                age -= 1
+                
+            return age
+        except Exception:
             return None

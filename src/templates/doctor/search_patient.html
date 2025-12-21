@@ -94,7 +94,7 @@
                                         <h6 class="mb-0">{{ patient.firstName }} {{ patient.lastName }}</h6>
                                         <small class="text-muted">
                                             {% if patient.birth_date %}
-                                                {{ calculate_age(patient.birth_date) }} years old
+                                                {{ patient.age if patient.age is not none else 'Age not specified' }} years old
                                             {% else %}
                                                 Age not specified
                                             {% endif %}
@@ -120,7 +120,7 @@
                             <td>
                                 {% if patient.birth_date %}
                                     <div>{{ patient.birth_date }}</div>
-                                    <small class="text-muted">{{ calculate_age(patient.birth_date) }} years</small>
+                                    <small class="text-muted">{{ patient.age if patient.age is not none else 'Age not specified' }} years</small>
                                 {% else %}
                                     <span class="text-muted">Not specified</span>
                                 {% endif %}
@@ -209,7 +209,7 @@
                                                                 <p><strong>Date of Birth:</strong> 
                                                                     {% if patient.birth_date %}
                                                                         {{ patient.birth_date }} 
-                                                                        <span class="text-muted">({{ calculate_age(patient.birth_date) }} years)</span>
+                                                                        <span class="text-muted">({{ patient.age if patient.age is not none else 'Age not specified' }} years)</span>
                                                                     {% else %}
                                                                         <span class="text-muted">Not specified</span>
                                                                     {% endif %}
@@ -353,7 +353,11 @@
                 
                 <div class="mt-4">
                     <h6 class="text-primary mb-3">Recent Patients</h6>
-                    {% set recent_patients = patient_repo.get_all_patients()[:5] if patient_repo.get_all_patients else [] %}
+                    {% if recent_patients is defined %}
+                        {% set recent_patients_display = recent_patients %}
+                    {% else %}
+                        {% set recent_patients_display = [] %}
+                    {% endif %}
                     {% if recent_patients %}
                     <div class="row">
                         {% for patient in recent_patients[:4] %}

@@ -1,0 +1,386 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header Section -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h2 fw-bold text-primary">
+                <i class="fas fa-prescription me-2"></i>
+                Manage Prescriptions
+            </h1>
+            <p class="text-muted mb-0">Create and manage patient prescriptions</p>
+        </div>
+        <div>
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#newPrescriptionModal">
+                <i class="fas fa-plus-circle me-2"></i>New Prescription
+            </button>
+        </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs fw-bold text-primary text-uppercase mb-1">
+                                Today's Prescriptions
+                            </div>
+                            <div class="h5 mb-0 fw-bold text-gray-800">0</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-file-prescription fa-2x text-primary"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs fw-bold text-success text-uppercase mb-1">
+                                Active Prescriptions
+                            </div>
+                            <div class="h5 mb-0 fw-bold text-gray-800">0</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-check-circle fa-2x text-success"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs fw-bold text-warning text-uppercase mb-1">
+                                Pending Renewals
+                            </div>
+                            <div class="h5 mb-0 fw-bold text-gray-800">0</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-clock fa-2x text-warning"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs fw-bold text-info text-uppercase mb-1">
+                                Expiring This Week
+                            </div>
+                            <div class="h5 mb-0 fw-bold text-gray-800">0</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-calendar-week fa-2x text-info"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Search and Filter -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Search Prescriptions</h6>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <input type="text" class="form-control" placeholder="Search by patient name or ID..." id="searchInput">
+                </div>
+                <div class="col-md-3">
+                    <select class="form-select" id="statusFilter">
+                        <option value="">All Status</option>
+                        <option value="active">Active</option>
+                        <option value="completed">Completed</option>
+                        <option value="expired">Expired</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <input type="date" class="form-control" id="dateFilter">
+                </div>
+                <div class="col-md-2">
+                    <button class="btn btn-primary w-100" onclick="searchPrescriptions()">
+                        <i class="fas fa-search me-2"></i>Search
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Prescriptions Table -->
+    <div class="card shadow">
+        <div class="card-header py-3 d-flex justify-content-between align-items-center">
+            <h6 class="m-0 font-weight-bold text-primary">Recent Prescriptions</h6>
+            <div class="btn-group">
+                <button class="btn btn-sm btn-outline-secondary" onclick="printPrescriptions()">
+                    <i class="fas fa-print me-1"></i>Print
+                </button>
+                <button class="btn btn-sm btn-outline-secondary" onclick="exportPrescriptions()">
+                    <i class="fas fa-download me-1"></i>Export
+                </button>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover" id="prescriptionsTable">
+                    <thead>
+                        <tr>
+                            <th>Prescription ID</th>
+                            <th>Patient</th>
+                            <th>Date</th>
+                            <th>Medications</th>
+                            <th>Instructions</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Will be populated dynamically -->
+                        <tr>
+                            <td colspan="7" class="text-center py-5">
+                                <div class="text-muted">
+                                    <i class="fas fa-file-prescription fa-3x mb-3"></i>
+                                    <h5>No Prescriptions Found</h5>
+                                    <p>Start by creating your first prescription</p>
+                                    <button class="btn btn-primary mt-2" data-bs-toggle="modal" data-bs-target="#newPrescriptionModal">
+                                        <i class="fas fa-plus-circle me-2"></i>Create New Prescription
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- New Prescription Modal -->
+<div class="modal fade" id="newPrescriptionModal" tabindex="-1" aria-labelledby="newPrescriptionModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="newPrescriptionModalLabel">
+                    <i class="fas fa-file-prescription me-2"></i>New Prescription
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="prescriptionForm">
+                <div class="modal-body">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="patientSelect" class="form-label">Select Patient *</label>
+                            <select class="form-select" id="patientSelect" required>
+                                <option value="">Choose patient...</option>
+                                <!-- Will be populated from database -->
+                                <option value="1">John Doe (ID: PAT001)</option>
+                                <option value="2">Jane Smith (ID: PAT002)</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="prescriptionDate" class="form-label">Prescription Date *</label>
+                            <input type="date" class="form-control" id="prescriptionDate" required value="{{ today }}">
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Medications *</label>
+                        <div class="medication-container" id="medicationContainer">
+                            <div class="medication-row row g-3 mb-3">
+                                <div class="col-md-5">
+                                    <input type="text" class="form-control" placeholder="Medication name" required>
+                                </div>
+                                <div class="col-md-2">
+                                    <input type="text" class="form-control" placeholder="Dose" required>
+                                </div>
+                                <div class="col-md-2">
+                                    <input type="text" class="form-control" placeholder="Frequency" required>
+                                </div>
+                                <div class="col-md-2">
+                                    <input type="number" class="form-control" placeholder="Days" min="1" required>
+                                </div>
+                                <div class="col-md-1">
+                                    <button type="button" class="btn btn-danger" onclick="removeMedication(this)">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <button type="button" class="btn btn-sm btn-outline-primary" onclick="addMedicationRow()">
+                            <i class="fas fa-plus me-1"></i>Add Another Medication
+                        </button>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="instructions" class="form-label">Instructions *</label>
+                        <textarea class="form-control" id="instructions" rows="3" placeholder="Enter dosage instructions, warnings, etc." required></textarea>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="refills" class="form-label">Refills Allowed</label>
+                            <select class="form-select" id="refills">
+                                <option value="0">No Refills</option>
+                                <option value="1" selected>1 Refill</option>
+                                <option value="2">2 Refills</option>
+                                <option value="3">3 Refills</option>
+                                <option value="unlimited">Unlimited</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="expiryDate" class="form-label">Expiry Date</label>
+                            <input type="date" class="form-control" id="expiryDate">
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="notes" class="form-label">Additional Notes</label>
+                        <textarea class="form-control" id="notes" rows="2" placeholder="Any additional notes..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Prescription</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Initialize date pickers
+    document.addEventListener('DOMContentLoaded', function() {
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('prescriptionDate').value = today;
+        
+        // Set expiry date to 30 days from now
+        const expiryDate = new Date();
+        expiryDate.setDate(expiryDate.getDate() + 30);
+        document.getElementById('expiryDate').value = expiryDate.toISOString().split('T')[0];
+    });
+    
+    // Medication management
+    function addMedicationRow() {
+        const container = document.getElementById('medicationContainer');
+        const newRow = document.createElement('div');
+        newRow.className = 'medication-row row g-3 mb-3';
+        newRow.innerHTML = `
+            <div class="col-md-5">
+                <input type="text" class="form-control" placeholder="Medication name" required>
+            </div>
+            <div class="col-md-2">
+                <input type="text" class="form-control" placeholder="Dose" required>
+            </div>
+            <div class="col-md-2">
+                <input type="text" class="form-control" placeholder="Frequency" required>
+            </div>
+            <div class="col-md-2">
+                <input type="number" class="form-control" placeholder="Days" min="1" required>
+            </div>
+            <div class="col-md-1">
+                <button type="button" class="btn btn-danger" onclick="removeMedication(this)">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        `;
+        container.appendChild(newRow);
+    }
+    
+    function removeMedication(button) {
+        const row = button.closest('.medication-row');
+        if (row && document.querySelectorAll('.medication-row').length > 1) {
+            row.remove();
+        }
+    }
+    
+    // Form submission
+    document.getElementById('prescriptionForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        // Basic validation
+        const patientSelect = document.getElementById('patientSelect');
+        if (!patientSelect.value) {
+            alert('Please select a patient.');
+            return;
+        }
+        
+        // Collect medications
+        const medications = [];
+        document.querySelectorAll('.medication-row').forEach(row => {
+            const inputs = row.querySelectorAll('input');
+            if (inputs[0].value && inputs[1].value && inputs[2].value && inputs[3].value) {
+                medications.push({
+                    name: inputs[0].value,
+                    dose: inputs[1].value,
+                    frequency: inputs[2].value,
+                    days: inputs[3].value
+                });
+            }
+        });
+        
+        if (medications.length === 0) {
+            alert('Please add at least one medication.');
+            return;
+        }
+        
+        // Show success message
+        alert('Prescription saved successfully! (This is a demo - backend not implemented)');
+        $('#newPrescriptionModal').modal('hide');
+        document.getElementById('prescriptionForm').reset();
+        
+        // Reset to one medication row
+        const container = document.getElementById('medicationContainer');
+        container.innerHTML = `
+            <div class="medication-row row g-3 mb-3">
+                <div class="col-md-5">
+                    <input type="text" class="form-control" placeholder="Medication name" required>
+                </div>
+                <div class="col-md-2">
+                    <input type="text" class="form-control" placeholder="Dose" required>
+                </div>
+                <div class="col-md-2">
+                    <input type="text" class="form-control" placeholder="Frequency" required>
+                </div>
+                <div class="col-md-2">
+                    <input type="number" class="form-control" placeholder="Days" min="1" required>
+                </div>
+                <div class="col-md-1">
+                    <button type="button" class="btn btn-danger" onclick="removeMedication(this)">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+        `;
+    });
+    
+    // Search function
+    function searchPrescriptions() {
+        alert('Search functionality will be implemented with backend integration.');
+    }
+    
+    // Print function
+    function printPrescriptions() {
+        window.print();
+    }
+    
+    // Export function
+    function exportPrescriptions() {
+        alert('Export functionality will be implemented with backend integration.');
+    }
+</script>
+{% endblock %}

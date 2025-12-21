@@ -93,7 +93,6 @@ CREATE TABLE IF NOT EXISTS Appointment(
     foreign key (doctor_id) references doctor(id) ON DELETE CASCADE,
     foreign key (patient_id) references patient(id) ON DELETE CASCADE,
     foreign key (assistant_id) references assistant(id) ON DELETE SET NULL,
-    CONSTRAINT appointment_slot unique (doctor_id, date, appointment_time)
 );
 
 -- Medical Record table
