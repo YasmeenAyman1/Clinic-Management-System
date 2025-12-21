@@ -3,151 +3,362 @@
 {% block title %}Assistant Dashboard - Clinic Management System{% endblock %}
 
 {% block content %}
-<div class="dashboard-header">
-    <h1>Welcome, {{ assistant_name }}!</h1>
-    <p>Clinic management and appointment scheduling</p>
-    <div class="date-display">
-        <i class="fas fa-calendar-day"></i>
-        {{ today }}
-    </div>
-</div>
-
-<div class="stats-grid">
-    <div class="stat-card">
-        <div class="stat-icon total">
-            <i class="fas fa-calendar"></i>
-        </div>
-        <div class="stat-info">
-            <h3>{{ total_appointments }}</h3>
-            <p>Total Appointments</p>
-        </div>
-    </div>
-    
-    <div class="stat-card">
-        <div class="stat-icon booked">
-            <i class="fas fa-user-check"></i>
-        </div>
-        <div class="stat-info">
-            <h3>{{ booked_appointments }}</h3>
-            <p>Booked Appointments</p>
-        </div>
-    </div>
-    
-    <div class="stat-card">
-        <div class="stat-icon completed">
-            <i class="fas fa-check-circle"></i>
-        </div>
-        <div class="stat-info">
-            <h3>{{ completed_appointments }}</h3>
-            <p>Completed Today</p>
-        </div>
-    </div>
-</div>
-
-<div class="dashboard-section">
-    <div class="section-header">
-        <h2><i class="fas fa-list"></i> Today's Appointment List</h2>
-        <button class="btn btn-primary" onclick="showAddAppointmentModal()">
-            <i class="fas fa-plus"></i> Add Appointment
-        </button>
-    </div>
-    
-    {% if today_appointments %}
-    <div class="appointments-list">
-        {% for appt in today_appointments %}
-        <div class="appointment-card">
-            <div class="appointment-time">
-                <strong>{{ appt[1] }}</strong>
-            </div>
-            <div class="appointment-details">
-                <h4>Dr. {{ appt[2] }}</h4>
-                {% if appt[3] %}
-                    <p><i class="fas fa-user"></i> {{ appt[3] }}</p>
-                    <p><i class="fas fa-phone"></i> {{ appt[4] }}</p>
-                {% else %}
-                    <p class="text-muted">Available for booking</p>
-                {% endif %}
-            </div>
-            <div class="appointment-actions">
-                <span class="status-badge status-{{ appt[5] }}">
-                    {{ appt[5] }}
-                </span>
-                {% if appt[5] == 'available' %}
-                <form method="POST" action="{{ url_for('remove_appointment') }}" 
-                      onsubmit="return confirm('Remove this appointment slot?')">
-                    <input type="hidden" name="appointment_id" value="{{ appt[0] }}">
-                    <button type="submit" class="btn btn-sm btn-danger">
-                        <i class="fas fa-trash"></i>
+<div class="container-fluid py-4">
+    <!-- Header Section -->
+    <div class="row mb-4">
+        <div class="col">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="display-6 fw-bold text-dark">
+                        <i class="fas fa-user-nurse me-2" style="color: #6a5af9;"></i>
+                        Assistant Dashboard
+                    </h1>
+                    <p class="lead text-muted mb-0">Welcome, {{ assistant_name }}!</p>
+                    <div class="d-flex align-items-center mt-2">
+                        <i class="fas fa-calendar-day text-primary me-2"></i>
+                        <span class="text-muted">{{ today }}</span>
+                    </div>
+                </div>
+                <div>
+                    <button class="btn btn-primary btn-lg shadow-sm" onclick="showAddAppointmentModal()">
+                        <i class="fas fa-plus me-2"></i>Add Appointment
                     </button>
-                </form>
-                {% endif %}
+                </div>
             </div>
         </div>
-        {% endfor %}
     </div>
-    {% else %}
-    <div class="empty-state">
-        <i class="fas fa-calendar-times"></i>
-        <h3>No Appointments Scheduled</h3>
-        <p>Add appointments using the button above.</p>
+
+    <!-- Stats Cards -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-4">
+            <div class="card border-left-primary shadow-sm h-100 py-2 stats-card">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col-auto">
+                            <div class="icon-circle bg-primary-light">
+                                <i class="fas fa-calendar text-primary fa-2x"></i>
+                            </div>
+                        </div>
+                        <div class="col ms-3">
+                            <div class="text-xs fw-bold text-primary text-uppercase mb-1">
+                                Total Appointments
+                            </div>
+                            <div class="h3 mb-0 fw-bold text-dark">{{ total_appointments }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card border-left-success shadow-sm h-100 py-2 stats-card">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col-auto">
+                            <div class="icon-circle bg-success-light">
+                                <i class="fas fa-user-check text-success fa-2x"></i>
+                            </div>
+                        </div>
+                        <div class="col ms-3">
+                            <div class="text-xs fw-bold text-success text-uppercase mb-1">
+                                Booked Appointments
+                            </div>
+                            <div class="h3 mb-0 fw-bold text-dark">{{ booked_appointments }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card border-left-info shadow-sm h-100 py-2 stats-card">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col-auto">
+                            <div class="icon-circle bg-info-light">
+                                <i class="fas fa-check-circle text-info fa-2x"></i>
+                            </div>
+                        </div>
+                        <div class="col ms-3">
+                            <div class="text-xs fw-bold text-info text-uppercase mb-1">
+                                Completed Today
+                            </div>
+                            <div class="h3 mb-0 fw-bold text-dark">{{ completed_appointments }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
-    {% endif %}
+
+    <!-- Today's Appointments Section -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">
+                <i class="fas fa-list text-primary me-2"></i>
+                Today's Appointment List
+            </h5>
+            <div class="d-flex">
+                <button class="btn btn-outline-primary me-2" onclick="refreshAppointments()">
+                    <i class="fas fa-sync-alt"></i>
+                </button>
+                <button class="btn btn-primary" onclick="showAddAppointmentModal()">
+                    <i class="fas fa-plus me-2"></i>Add Appointment
+                </button>
+            </div>
+        </div>
+        
+        <div class="card-body">
+            {% if today_appointments %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Time</th>
+                            <th>Doctor</th>
+                            <th>Patient</th>
+                            <th>Contact</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for appt in today_appointments %}
+                        <tr class="align-middle">
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <i class="fas fa-clock text-primary me-2"></i>
+                                    <strong>{{ appt[1] }}</strong>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="avatar-sm bg-primary-light rounded-circle d-flex align-items-center justify-content-center me-2">
+                                        <i class="fas fa-user-md text-primary"></i>
+                                    </div>
+                                    <span>Dr. {{ appt[2] }}</span>
+                                </div>
+                            </td>
+                            <td>
+                                {% if appt[3] %}
+                                <div class="d-flex align-items-center">
+                                    <div class="avatar-sm bg-success-light rounded-circle d-flex align-items-center justify-content-center me-2">
+                                        <i class="fas fa-user text-success"></i>
+                                    </div>
+                                    <span>{{ appt[3] }}</span>
+                                </div>
+                                {% else %}
+                                <span class="text-muted">Available</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if appt[4] %}
+                                <div class="d-flex align-items-center">
+                                    <i class="fas fa-phone text-muted me-2"></i>
+                                    <span>{{ appt[4] }}</span>
+                                </div>
+                                {% else %}
+                                <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge status-{{ appt[5] }}">
+                                    {{ appt[5]|capitalize }}
+                                </span>
+                            </td>
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    {% if appt[5] == 'available' %}
+                                    <form method="POST" action="{{ url_for('remove_appointment') }}" 
+                                          class="d-inline" onsubmit="return confirm('Remove this appointment slot?')">
+                                        <input type="hidden" name="appointment_id" value="{{ appt[0] }}">
+                                        <button type="submit" class="btn btn-danger" title="Remove Slot">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </form>
+                                    {% endif %}
+                                    <button class="btn btn-outline-primary" onclick="viewAppointment(appt[0])" title="View Details">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <div class="empty-state-icon mb-3">
+                    <i class="fas fa-calendar-times fa-4x text-muted"></i>
+                </div>
+                <h4 class="text-muted mb-3">No Appointments Scheduled</h4>
+                <p class="text-muted mb-4">Add appointments using the button above.</p>
+                <button class="btn btn-primary" onclick="showAddAppointmentModal()">
+                    <i class="fas fa-plus me-2"></i>Add Your First Appointment
+                </button>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Quick Actions Section -->
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-white py-3">
+                    <h5 class="mb-0">
+                        <i class="fas fa-bolt text-warning me-2"></i>
+                        Quick Actions
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-3">
+                            <a href="{{ url_for('assistant.assistant_home') }}" class="btn btn-outline-primary w-100 h-100 py-3">
+                                <i class="fas fa-calendar-alt fa-2x mb-2"></i>
+                                <h6>All Appointments</h6>
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <a href="{{ url_for('assistant.search_patient') }}" class="btn btn-outline-success w-100 h-100 py-3">
+                                <i class="fas fa-search fa-2x mb-2"></i>
+                                <h6>Search Patients</h6>
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <button class="btn btn-outline-info w-100 h-100 py-3" onclick="showAddAppointmentModal()">
+                                <i class="fas fa-calendar-plus fa-2x mb-2"></i>
+                                <h6>New Appointment</h6>
+                            </button>
+                        </div>
+                        <div class="col-md-3">
+                            <a href="{{ url_for('doctor.schedule') }}" class="btn btn-outline-warning w-100 h-100 py-3">
+                                <i class="fas fa-clock fa-2x mb-2"></i>
+                                <h6>Manage Schedule</h6>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 <!-- Add Appointment Modal -->
-<div id="addAppointmentModal" class="modal">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h3>Add New Appointment</h3>
-            <button class="close-btn" onclick="closeModal()">&times;</button>
+<div class="modal fade" id="addAppointmentModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-calendar-plus me-2"></i>
+                    Add New Appointment
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('assistant.add_appointment') }}">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="doctor_id" class="form-label">Doctor</label>
+                        <select class="form-select" id="doctor_id" name="doctor_id" required>
+                            <option value="">Select Doctor</option>
+                            <option value="1">Dr. Smith (Cardiology)</option>
+                            <option value="2">Dr. Johnson (Pediatrics)</option>
+                            <option value="3">Dr. Williams (Dermatology)</option>
+                        </select>
+                    </div>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="appointment_date" class="form-label">Date</label>
+                            <input type="date" class="form-control" id="appointment_date" 
+                                   name="appointment_date" required min="{{ today }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="appointment_time" class="form-label">Time</label>
+                            <input type="time" class="form-control" id="appointment_time" 
+                                   name="appointment_time" required min="08:00" max="20:00">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Add Appointment</button>
+                </div>
+            </form>
         </div>
-        <form method="POST" action="{{ url_for('add_appointment') }}" class="modal-form">
-            <div class="form-group">
-                <label for="doctor_id">Doctor</label>
-                <select id="doctor_id" name="doctor_id" required>
-                    <option value="">Select Doctor</option>
-                    <option value="1">Dr. Smith (Cardiology)</option>
-                    <option value="2">Dr. Johnson (Pediatrics)</option>
-                    <option value="3">Dr. Williams (Dermatology)</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label for="appointment_date">Date</label>
-                <input type="date" id="appointment_date" name="appointment_date" required 
-                       min="{{ today }}">
-            </div>
-            <div class="form-group">
-                <label for="appointment_time">Time</label>
-                <input type="time" id="appointment_time" name="appointment_time" required 
-                       min="08:00" max="20:00">
-            </div>
-            <div class="form-buttons">
-                <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancel</button>
-                <button type="submit" class="btn btn-primary">Add Appointment</button>
-            </div>
-        </form>
     </div>
 </div>
 
 {% endblock %}
 
+{% block extra_css %}
+<style>
+/* Custom styles for assistant dashboard */
+.icon-circle {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.bg-primary-light { background-color: rgba(78, 115, 223, 0.1); }
+.bg-success-light { background-color: rgba(28, 200, 138, 0.1); }
+.bg-info-light { background-color: rgba(54, 185, 204, 0.1); }
+
+.status-available { background-color: #1cc88a; color: white; }
+.status-booked { background-color: #f6c23e; color: white; }
+.status-completed { background-color: #36b9cc; color: white; }
+.status-cancelled { background-color: #e74a3b; color: white; }
+
+.avatar-sm {
+    width: 36px;
+    height: 36px;
+}
+
+.empty-state-icon {
+    opacity: 0.3;
+}
+
+.btn-outline-primary, .btn-outline-success, .btn-outline-info, .btn-outline-warning {
+    transition: all 0.3s;
+}
+
+.btn-outline-primary:hover, .btn-outline-success:hover, 
+.btn-outline-info:hover, .btn-outline-warning:hover {
+    transform: translateY(-2px);
+}
+</style>
+{% endblock %}
+
 {% block scripts %}
 <script>
 function showAddAppointmentModal() {
-    document.getElementById('addAppointmentModal').style.display = 'block';
+    var modal = new bootstrap.Modal(document.getElementById('addAppointmentModal'));
+    modal.show();
 }
 
-function closeModal() {
-    document.getElementById('addAppointmentModal').style.display = 'none';
+function refreshAppointments() {
+    location.reload();
 }
 
-// Close modal when clicking outside
-window.onclick = function(event) {
-    const modal = document.getElementById('addAppointmentModal');
-    if (event.target == modal) {
-        modal.style.display = 'none';
-    }
+function viewAppointment(appointmentId) {
+    // Implement view appointment details
+    alert('Viewing appointment #' + appointmentId);
 }
+
+// Set today's date as default in the modal
+document.addEventListener('DOMContentLoaded', function() {
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('appointment_date').value = today;
+    
+    // Set default time to next hour
+    const now = new Date();
+    const nextHour = new Date(now.getTime() + 60 * 60 * 1000);
+    const timeString = nextHour.getHours().toString().padStart(2, '0') + ':00';
+    document.getElementById('appointment_time').value = timeString;
+});
 </script>
 {% endblock %}
        

@@ -4,7 +4,7 @@ import secrets
 
 from repositories.repositories_factory import RepositoryFactory
 
-authO_bp = Blueprint("auth", __name__, url_prefix="/auth")
+authO_bp = Blueprint("auth", __name__, url_prefix="/authO")
 
 # Initialize all repositories at module level
 user_repo = RepositoryFactory.get_repository("user")
@@ -206,6 +206,7 @@ def login():
         session["user_id"] = user.id
         session["username"] = user.username
         session["role"] = user.role
+        session["status"] = user.status 
         
         # Get user's name based on role
         if user.role == "patient":

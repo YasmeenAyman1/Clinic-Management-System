@@ -34,7 +34,7 @@ class UserRepository(BaseRepository):
     def get_by_username(self, username: str) -> Optional[User]:
         cursor = self.db.cursor(dictionary=True)
         cursor.execute(
-            "SELECT id, username, password, role, status, update_at AS updated_at, create_at AS created_at FROM user WHERE username = %s",
+            "SELECT id, username, password, role, status, update_at AS updated_at, create_at AS created_at FROM `user` WHERE username = %s",
             (username,),
         ) 
         row = cursor.fetchone()
