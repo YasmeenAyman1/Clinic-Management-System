@@ -87,3 +87,82 @@ class DoctorRepository(BaseRepository):
             return None
         finally:
             cursor.close()
+            
+    def search_doctors(self, search_query: str) -> List[Doctor]:
+        """Search doctors by name, phone, or specialization."""
+        cursor = None
+        try:
+            cursor = self.db.cursor(dictionary=True)
+            search_pattern = f"%{search_query}%"
+            cursor.execute(
+                """
+                SELECT id, firstName, lastName, phone, schedule, user_id, specialization, create_at AS create_at
+                FROM doctor
+                WHERE firstName LIKE %s 
+                OR lastName LIKE %s 
+                OR CONCAT(firstName, ' ', lastName) LIKE %s
+                OR phone LIKE %s
+                OR specialization LIKE %s
+                ORDER BY lastName, firstName
+                """,
+                (search_pattern, search_pattern, search_pattern, search_pattern, search_pattern),
+            )
+            rows = cursor.fetchall()
+            return [Doctor(**row) for row in rows] if rows else []
+        except Exception as e:
+            print(f"Error searching doctors: {e}")
+            return []
+        finally:
+            if cursor:
+                cursor.close()
+
+
+    def delete_doctor(self, doctor_id: int) -> bool:
+        """Delete a doctor by ID."""
+        cursor = None
+        try:
+            cursor = self.db.cursor()
+            cursor.execute("DELETE FROM doctor WHERE id = %s", (doctor_id,))
+            self.db.commit()
+            return cursor.rowcount > 0
+        except Exception as e:
+            self.db.rollback()
+            print(f"Error deleting doctor {doctor_id}: {e}")
+            return False
+        finally:
+            if cursor:
+                cursor.close()
+    def get_total_count(self) -> int:
+        """Get total number of doctors."""
+        cursor = None
+        try:
+            cursor = self.db.cursor()
+            cursor.execute("SELECT COUNT(*) FROM doctor")
+            return cursor.fetchone()[0]
+        except Exception as e:
+            print(f"Error getting doctor count: {e}")
+            return 0
+        finally:
+            if cursor:
+                cursor.close()
+
+    def get_counts_by_specialization(self) -> dict:
+        """Get count of doctors by specialization."""
+        cursor = None
+        try:
+            cursor = self.db.cursor(dictionary=True)
+            cursor.execute(
+                """
+                SELECT specialization, COUNT(*) as count
+                FROM doctor
+                GROUP BY specialization
+                ORDER BY count DESC
+                """
+            )
+            return {row['specialization']: row['count'] for row in cursor.fetchall()}
+        except Exception as e:
+            print(f"Error getting specialization counts: {e}")
+            return {}
+        finally:
+            if cursor:
+                cursor.close()

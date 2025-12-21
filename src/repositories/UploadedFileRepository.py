@@ -15,12 +15,15 @@ class UploadedFileRepository(BaseRepository):
         """Save uploaded file metadata to the DB and return UploadedFile model."""
         cursor = self.db.cursor(dictionary=True)
         try:
+            # Use forward slashes for URLs
+            filepath_fixed = filepath.replace('\\', '/')
+            
             cursor.execute(
                 """
-                INSERT INTO UploadedFile (file_path, file_type, uploaded_by_user_id, upload_date, record_id, patient_id, appointment_id)
-                VALUES (%s, %s, %s, CURDATE(), %s, %s, %s)
+                INSERT INTO UploadedFile (filename, file_path, file_type, uploaded_by_user_id, upload_date, record_id, patient_id, appointment_id)
+                VALUES (%s, %s, %s, %s, CURDATE(), %s, %s, %s)
                 """,
-                (filepath, file_type or filename, uploaded_by, record_id, patient_id, appointment_id),
+                (filename, filepath_fixed, file_type or 'application/octet-stream', uploaded_by, record_id, patient_id, appointment_id),
             )
             self.db.commit()
             new_id = cursor.lastrowid

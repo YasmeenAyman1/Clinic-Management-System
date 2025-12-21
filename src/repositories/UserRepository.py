@@ -4,7 +4,7 @@ from repositories.BaseRepository import BaseRepository
 
 class UserRepository(BaseRepository):
     def create_user(self, username: str, password_hash: str, role: str = "patient", status: str = "active") -> Optional[User]:
-        #Cursor = tool to run SQL
+        #Cursor = tool to run SQL   
         cursor = self.db.cursor()
 
         #%s prevents SQL Injection, MySQL safely inserts values, Correct & secure
@@ -84,3 +84,17 @@ class UserRepository(BaseRepository):
         self.db.commit()
         cursor.close()
         return True
+    def update_password(self, user_id: int, new_password_hash: str) -> bool:
+        cursor = self.db.cursor()
+        try:
+            cursor.execute(
+                "UPDATE user SET password = %s WHERE id = %s",
+                (new_password_hash, user_id)
+            )
+            self.db.commit()
+            return True
+        except Exception as e:
+            print(f"Error updating password: {e}")
+            return False
+        finally:
+            cursor.close()

@@ -13,7 +13,7 @@ class ContactRepository(BaseRepository):
                 """,
                 (name, email, message),
             )
-            self.db.commit()
+            self.db.commit()  # confirm changes
             new_id = cursor.lastrowid
             cursor.execute(
                 "SELECT id, name, email, message, create_at AS created_at FROM Contact WHERE id = %s",
