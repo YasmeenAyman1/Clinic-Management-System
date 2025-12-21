@@ -1,20 +1,14 @@
 class MedicalRecord:
-    def __init__(self,id,diagnoisis,treatment,uploaded_by_user_id,upload_date,follow_up_date,doctor_id,patient_id,appointment_id,created_at):
-        self.id=id
-        self.diagnoisis=diagnoisis
-        self.treatment=treatment
-        self.uploaded_by_user_id=uploaded_by_user_id
-        self.upload_date=upload_date
-        self.follow_up_data=follow_up_date
-        self.doctor_id=doctor_id
-        self.patient_id=patient_id
-        self.appointment_id=appointment_id
-        self.created_at=created_at
-
-
-
-
-
-
-
-
+    def __init__(self, id=None, patient_id=None, doctor_id=None, diagnosis=None, 
+                 treatment=None, uploaded_by_user_id=None, upload_date=None, 
+                 follow_up_date=None, appointment_id=None, created_at=None):
+        self.id = id
+        self.patient_id = patient_id
+        self.doctor_id = doctor_id
+        self.diagnosis = diagnosis
+        self.treatment = treatment
+        self.uploaded_by_user_id = uploaded_by_user_id
+        self.upload_date = upload_date
+        self.follow_up_date = follow_up_date
+        self.appointment_id = appointment_id
+        self.created_at = created_at
