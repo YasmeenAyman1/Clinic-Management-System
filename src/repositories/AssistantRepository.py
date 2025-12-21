@@ -49,3 +49,19 @@ class AssistantRepository(BaseRepository):
             return None
         finally:
             cursor.close()
+    # def create_auto_profile(user):
+    #     query = """
+    #     INSERT INTO assistant (firstName, lastName, phone, user_id)
+    #     VALUES (%s, %s, %s, %s)
+    #     """
+    #     cursor.execute(
+    #     query,
+    #     (
+    #         user.username.split("@")[0],  # اسم افتراضي
+    #         "Assistant",
+    #         "0000000000",
+    #         user.id
+    #     )
+    # )
+    #     connection.commit()
+        

@@ -6,12 +6,12 @@ import datetime
 class AppointmentRepository(BaseRepository):
     def create_appointment(
         self,
-        patient_id: int,
-        doctor_id: int,
-        date: str,
-        appointment_time: str,
+        patient_id: Optional[int] = None,
+        doctor_id: int = None,
+        date: str = None,
+        appointment_time: str = None,
         assistant_id: Optional[int] = None,
-        status: str = "PENDING"
+        status: str = "available"
     ) -> Optional[Appointment]:
         cursor = self.db.cursor(buffered=True)
         try:
@@ -38,13 +38,16 @@ class AppointmentRepository(BaseRepository):
                 (patient_id, doctor_id, date, appointment_time, assistant_id, status),
             )
             self.db.commit()
-            return self.get_by_id(cursor.lastrowid)
+            appointment_id = cursor.lastrowid
+            print(f"DEBUG: Appointment created with ID: {appointment_id}")
+            return self.get_by_id(appointment_id)
         except Exception as e:
             self.db.rollback()
             print(f"Error creating appointment: {e}")
             return None
         finally:
             cursor.close()
+    
 
     def get_by_id(self, appointment_id: int) -> Optional[Appointment]:
         cursor = self.db.cursor(dictionary=True, buffered=True)
