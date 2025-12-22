@@ -37,10 +37,14 @@ class DoctorAvailabilityRepository(BaseRepository):
         return None
 
     def list_by_doctor(self, doctor_id: int, start_date: Optional[str] = None, end_date: Optional[str] = None) -> List[DoctorAvailability]:
-        cursor = self.db.cursor(dictionary=True)
+        cursor = self.db.cursor(dictionary=True, buffered=True)
         if start_date and end_date:
             cursor.execute(
-                "SELECT id, doctor_id, date, start_time, end_time, create_at AS create_at FROM doctor_availability WHERE doctor_id = %s AND date BETWEEN %s AND %s ORDER BY date, start_time",
+                """SELECT id, doctor_id, date, start_time, end_time, create_at
+                FROM doctor_availability 
+                WHERE doctor_id = %s 
+                AND date BETWEEN %s 
+                AND %s ORDER BY date, start_time""",
                 (doctor_id, start_date, end_date),
             )
         else:
@@ -49,6 +53,7 @@ class DoctorAvailabilityRepository(BaseRepository):
                 (doctor_id,)
             )
         rows = cursor.fetchall()
+        print(f"DEBUG list_by_doctor: Found {len(rows)} entries for doctor {doctor_id}")
         cursor.close()
         
         availabilities = []

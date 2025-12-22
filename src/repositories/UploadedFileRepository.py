@@ -20,10 +20,10 @@ class UploadedFileRepository(BaseRepository):
             
             cursor.execute(
                 """
-                INSERT INTO UploadedFile (filename, file_path, file_type, uploaded_by_user_id, upload_date, record_id, patient_id, appointment_id)
-                VALUES (%s, %s, %s, %s, CURDATE(), %s, %s, %s)
+                INSERT INTO UploadedFile ( file_path, file_type, uploaded_by_user_id, upload_date, record_id, patient_id, appointment_id)
+                VALUES (%s, %s, %s, CURDATE(), %s, %s, %s)
                 """,
-                (filename, filepath_fixed, file_type or 'application/octet-stream', uploaded_by, record_id, patient_id, appointment_id),
+                (filepath_fixed, file_type or 'application/octet-stream', uploaded_by, record_id, patient_id, appointment_id),
             )
             self.db.commit()
             new_id = cursor.lastrowid
@@ -35,37 +35,12 @@ class UploadedFileRepository(BaseRepository):
         finally:
             cursor.close()
     
-    def get_by_id(self, file_id: int) -> Optional[UploadedFile]:
-        cursor = self.db.cursor(dictionary=True)
-        cursor.execute(
-            """
-            SELECT id, file_path, file_type, uploaded_by_user_id, upload_date AS upload_date, record_id, patient_id, appointment_id, create_at AS created_at
-            FROM UploadedFile
-            WHERE id = %s
-            """,
-            (file_id,),
-        )
-        row = cursor.fetchone()
-        cursor.close()
-        if not row:
-            return None
-        return UploadedFile(
-            id=row.get("id"),
-            file_path=row.get("file_path"),
-            file_type=row.get("file_type"),
-            uploaded_by_user_id=row.get("uploaded_by_user_id"),
-            upload_date=row.get("upload_date"),
-            record_id=row.get("record_id"),
-            patient_id=row.get("patient_id"),
-            appointment_id=row.get("appointment_id"),
-            created_at=row.get("created_at"),
-        )
-    
     def get_files_by_record(self, record_id: int) -> List[UploadedFile]:
         cursor = self.db.cursor(dictionary=True)
         cursor.execute(
             """
-            SELECT id, file_path, file_type, uploaded_by_user_id, upload_date AS upload_date, record_id, patient_id, appointment_id, create_at AS created_at
+            SELECT id, file_path, file_type, uploaded_by_user_id, upload_date AS upload_date, 
+                record_id, patient_id, appointment_id, create_at AS created_at
             FROM UploadedFile
             WHERE record_id = %s
             ORDER BY upload_date DESC
@@ -74,16 +49,23 @@ class UploadedFileRepository(BaseRepository):
         )
         rows = cursor.fetchall()
         cursor.close()
-        return [
-            UploadedFile(
-                id=row.get("id"),
-                file_path=row.get("file_path"),
-                file_type=row.get("file_type"),
-                uploaded_by_user_id=row.get("uploaded_by_user_id"),
-                upload_date=row.get("upload_date"),
-                record_id=row.get("record_id"),
-                patient_id=row.get("patient_id"),
-                appointment_id=row.get("appointment_id"),
-                created_at=row.get("created_at"),
-            ) for row in rows
-        ] if rows else []
+        
+        files = []
+        for row in rows:
+            try:
+                files.append(UploadedFile(
+                    id=row.get("id"),
+                    file_path=row.get("file_path"),
+                    file_type=row.get("file_type"),
+                    uploaded_by_user_id=row.get("uploaded_by_user_id"),
+                    upload_date=row.get("upload_date"),
+                    record_id=row.get("record_id"),
+                    patient_id=row.get("patient_id"),
+                    appointment_id=row.get("appointment_id"),
+                    created_at=row.get("created_at"),
+                ))
+            except Exception as e:
+                print(f"Error creating UploadedFile object: {e}")
+                continue
+        
+        return files

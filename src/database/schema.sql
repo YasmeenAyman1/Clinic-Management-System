@@ -90,6 +90,7 @@ CREATE TABLE IF NOT EXISTS Appointment(
     assistant_id int NULL,
     doctor_id int NULL,
     patient_id int NULL,
+    note varchar(1000) NULL,
     foreign key (doctor_id) references doctor(id) ON DELETE CASCADE,
     foreign key (patient_id) references patient(id) ON DELETE CASCADE,
     foreign key (assistant_id) references assistant(id) ON DELETE SET NULL,
@@ -148,4 +149,24 @@ CREATE TABLE IF NOT EXISTS admin_audit (
     details VARCHAR(500) NULL,
     create_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (admin_user_id) REFERENCES user(id) ON DELETE SET NULL
+);
+
+CREATE TABLE IF NOT EXISTS tasks (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    title VARCHAR(255) NOT NULL,
+    description TEXT,
+    status VARCHAR(20) DEFAULT 'pending' CHECK (status IN ('pending', 'in_progress', 'completed', 'cancelled')),
+    priority VARCHAR(20) DEFAULT 'medium' CHECK (priority IN ('high', 'medium', 'low')),
+    category VARCHAR(50),
+    due_date DATE,
+    assigned_to INT,
+    created_by INT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (assigned_to) REFERENCES assistant(id) ON DELETE CASCADE,
+    FOREIGN KEY (created_by) REFERENCES user(id) ON DELETE SET NULL,
+    INDEX idx_status (status),
+    INDEX idx_priority (priority),
+    INDEX idx_due_date (due_date),
+    INDEX idx_assigned_to (assigned_to)
 );

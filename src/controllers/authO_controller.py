@@ -359,6 +359,7 @@ def profile():
             name = request.form.get("name", "").strip()
             phone = request.form.get("phone", "").strip()
             email = request.form.get("email", "").strip()
+            gender = request.form.get("gender", "").strip()
             birth_date = request.form.get("birth_date", "").strip()
             address = request.form.get("address", "").strip()
             specialization = request.form.get("specialization", "").strip()
@@ -381,9 +382,10 @@ def profile():
             # Update patient/doctor/assistant info
             if session.get("role") == "patient" and patient:
                 first_name, last_name = name.split(" ", 1) if " " in name else (name, "")
-                patient_repo.update_patient(patient.id, first_name, last_name, phone, birth_date, address)
+                patient_repo.update_patient(patient.id, first_name, last_name, gender, phone, birth_date, address)
                 session["name"] = name
                 session["phone"] = phone
+                session["gender"] = gender
                 session["birth_date"] = birth_date
                 session["address"] = address
                 flash("Profile updated successfully!", category="success")

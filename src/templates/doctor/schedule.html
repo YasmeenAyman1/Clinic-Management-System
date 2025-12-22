@@ -15,9 +15,6 @@
             <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addAvailabilityModal">
                 <i class="fas fa-plus-circle me-2"></i>Add Availability
             </button>
-            <button class="btn btn-outline-primary ms-2" data-bs-toggle="modal" data-bs-target="#viewAppointmentsModal">
-                <i class="fas fa-list me-2"></i>View All Appointments
-            </button>
         </div>
     </div>
 
@@ -120,18 +117,18 @@
         <div class="card-body">
             <div class="tab-content" id="scheduleTabContent">
                 
-                <!-- Weekly View Tab -->
+                <!-- Weekly View Tab - UPDATED WITH REAL DATA -->
                 <div class="tab-pane fade show active" id="weekly" role="tabpanel">
                     <div class="d-flex justify-content-between align-items-center mb-3">
-                        <h5 class="mb-0">This Week's Schedule</h5>
+                        <h5 class="mb-0">Weekly Schedule</h5>
                         <div>
-                            <button class="btn btn-sm btn-outline-secondary" id="prevWeek">
-                                <i class="fas fa-chevron-left"></i>
-                            </button>
-                            <span class="mx-2" id="currentWeekRange"></span>
-                            <button class="btn btn-sm btn-outline-secondary" id="nextWeek">
-                                <i class="fas fa-chevron-right"></i>
-                            </button>
+                            <form method="GET" action="{{ url_for('doctor.schedule') }}" class="d-flex">
+                                <input type="date" class="form-control form-control-sm me-2" name="week_start" 
+                                       value="{{ week_start if week_start else today }}" style="width: 150px;">
+                                <button type="submit" class="btn btn-sm btn-primary">
+                                    <i class="fas fa-search"></i> View Week
+                                </button>
+                            </form>
                         </div>
                     </div>
                     
@@ -140,16 +137,59 @@
                             <thead>
                                 <tr class="bg-light">
                                     <th style="width: 14%">Time</th>
-                                    <th style="width: 14%">Monday<br><span id="mondayDate" class="text-muted small"></span></th>
-                                    <th style="width: 14%">Tuesday<br><span id="tuesdayDate" class="text-muted small"></span></th>
-                                    <th style="width: 14%">Wednesday<br><span id="wednesdayDate" class="text-muted small"></span></th>
-                                    <th style="width: 14%">Thursday<br><span id="thursdayDate" class="text-muted small"></span></th>
-                                    <th style="width: 14%">Friday<br><span id="fridayDate" class="text-muted small"></span></th>
-                                    <th style="width: 14%">Saturday<br><span id="saturdayDate" class="text-muted small"></span></th>
+                                    {% for day in week_days %}
+                                    <th style="width: 14%">
+                                        {{ day.day_name }}<br>
+                                        <span class="text-muted small">{{ day.date }}</span>
+                                    </th>
+                                    {% endfor %}
                                 </tr>
                             </thead>
-                            <tbody id="weeklyScheduleBody">
-                                <!-- Will be populated by JavaScript -->
+                            <tbody>
+                                {% for time_slot in time_slots %}
+                                <tr>
+                                    <td class="bg-light">
+                                        <strong>{{ time_slot }}</strong>
+                                    </td>
+                                    {% for day in week_days %}
+                                    <td class="text-center schedule-cell" 
+                                        data-date="{{ day.date }}" 
+                                        data-time="{{ time_slot }}"
+                                        onclick="handleCellClick(this)">
+                                        {% set cell_data = weekly_schedule.get(day.date, {}).get(time_slot, {}) %}
+                                        
+                                        {% if cell_data.type == 'appointment' %}
+                                            <div class="appointment-slot bg-primary text-white p-1 rounded">
+                                                <small>
+                                                    <i class="fas fa-user me-1"></i>
+                                                    {{ cell_data.patient_name|truncate(15) if cell_data.patient_name else 'Appointment' }}
+                                                </small>
+                                                <br>
+                                                <small class="badge {% if cell_data.status == 'pending' %}bg-warning{% else %}bg-success{% endif %}">
+                                                    {{ cell_data.status|title }}
+                                                </small>
+                                            </div>
+                                        {% elif cell_data.type == 'available' %}
+                                            <div class="available-slot bg-success text-white p-1 rounded">
+                                                <small>
+                                                    <i class="fas fa-check me-1"></i>
+                                                    Available
+                                                </small>
+                                            </div>
+                                        {% elif cell_data.type == 'unavailable' %}
+                                            <div class="unavailable-slot bg-secondary text-white p-1 rounded">
+                                                <small>
+                                                    <i class="fas fa-times me-1"></i>
+                                                    Busy
+                                                </small>
+                                            </div>
+                                        {% else %}
+                                            <small class="text-muted">—</small>
+                                        {% endif %}
+                                    </td>
+                                    {% endfor %}
+                                </tr>
+                                {% endfor %}
                             </tbody>
                         </table>
                     </div>
@@ -157,9 +197,9 @@
                     <div class="mt-3">
                         <h6 class="text-primary mb-2"><i class="fas fa-key me-2"></i>Legend</h6>
                         <div class="d-flex flex-wrap gap-2">
-                            <span class="badge bg-success p-2"><i class="fas fa-check-circle me-1"></i>Available</span>
-                            <span class="badge bg-primary p-2"><i class="fas fa-calendar-check me-1"></i>Booked</span>
-                            <span class="badge bg-warning p-2"><i class="fas fa-hourglass-half me-1"></i>Pending</span>
+                            <span class="badge bg-success p-2"><i class="fas fa-check-circle me-1"></i>Available Slot</span>
+                            <span class="badge bg-primary p-2"><i class="fas fa-calendar-check me-1"></i>Booked Appointment</span>
+                            <span class="badge bg-warning p-2"><i class="fas fa-hourglass-half me-1"></i>Pending Approval</span>
                             <span class="badge bg-secondary p-2"><i class="fas fa-times-circle me-1"></i>Not Available</span>
                         </div>
                     </div>
@@ -184,7 +224,7 @@
                                     <th>Time Slot</th>
                                     <th>Duration</th>
                                     <th>Status</th>
-                                    <th>Booked Appointments</th>
+                                    <th>Booked</th>
                                     <th>Actions</th>
                                 </tr>
                             </thead>
@@ -219,7 +259,7 @@
                                     </td>
                                     <td>
                                         <div class="btn-group btn-group-sm">
-                                            <button class="btn btn-outline-danger" 
+                                            <button class="btn btn-outline-danger btn-sm" 
                                                     onclick="deleteAvailability({{ slot.id }})"
                                                     {% if booked_count > 0 %}disabled title="Cannot delete slot with appointments"{% endif %}>
                                                 <i class="fas fa-trash"></i>
@@ -248,23 +288,24 @@
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <h5 class="mb-0">All Appointments</h5>
                         <div class="d-flex">
-                            <div class="input-group input-group-sm me-2" style="width: 200px;">
-                                <input type="date" class="form-control" id="filterDate" value="{{ today }}">
-                                <button class="btn btn-outline-secondary" type="button" onclick="filterByDate()">
-                                    <i class="fas fa-filter"></i>
+                            <form method="GET" action="{{ url_for('doctor.schedule') }}" class="d-flex me-2">
+                                <input type="date" class="form-control form-control-sm" name="filter_date" 
+                                       value="{{ filter_date if filter_date else '' }}" style="width: 150px;">
+                                <button type="submit" class="btn btn-sm btn-outline-secondary ms-2">
+                                    <i class="fas fa-filter"></i> Filter
                                 </button>
-                            </div>
+                            </form>
                             <div class="dropdown">
                                 <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" 
                                         data-bs-toggle="dropdown" aria-expanded="false">
-                                    <i class="fas fa-filter me-1"></i>Filter Status
+                                    <i class="fas fa-filter me-1"></i>Status
                                 </button>
                                 <ul class="dropdown-menu">
-                                    <li><a class="dropdown-item" href="#" onclick="filterByStatus('all')">All Appointments</a></li>
-                                    <li><a class="dropdown-item" href="#" onclick="filterByStatus('pending')">Pending Approval</a></li>
-                                    <li><a class="dropdown-item" href="#" onclick="filterByStatus('confirmed')">Confirmed</a></li>
-                                    <li><a class="dropdown-item" href="#" onclick="filterByStatus('completed')">Completed</a></li>
-                                    <li><a class="dropdown-item" href="#" onclick="filterByStatus('cancelled')">Cancelled</a></li>
+                                    <li><a class="dropdown-item" href="{{ url_for('doctor.schedule', status='all') }}">All Appointments</a></li>
+                                    <li><a class="dropdown-item" href="{{ url_for('doctor.schedule', status='pending') }}">Pending</a></li>
+                                    <li><a class="dropdown-item" href="{{ url_for('doctor.schedule', status='confirmed') }}">Confirmed</a></li>
+                                    <li><a class="dropdown-item" href="{{ url_for('doctor.schedule', status='completed') }}">Completed</a></li>
+                                    <li><a class="dropdown-item" href="{{ url_for('doctor.schedule', status='cancelled') }}">Cancelled</a></li>
                                 </ul>
                             </div>
                         </div>
@@ -272,7 +313,7 @@
                     
                     {% if appointments and appointments|length > 0 %}
                     <div class="table-responsive">
-                        <table class="table table-hover" id="appointmentsTable">
+                        <table class="table table-hover">
                             <thead>
                                 <tr>
                                     <th>Date & Time</th>
@@ -288,7 +329,7 @@
                                 <tr>
                                     <td>
                                         <div><strong>{{ appointment.date }}</strong></div>
-                                        <div class="text-muted small">{{ appointment.appointment_time }}</div>
+                                        <div class="text-muted small">{{ appointment.time if appointment.time else appointment.appointment_time }}</div>
                                     </td>
                                     <td>
                                         <div class="d-flex align-items-center">
@@ -301,20 +342,14 @@
                                                 {% endif %}
                                             </div>
                                             <div>
-                                                    <div>
+                                                <div>
                                                     {% if appointment.patient %}
                                                         {{ appointment.patient.firstName }} {{ appointment.patient.lastName }}
                                                     {% else %}
-                                                        <!-- Try to get patient from patient_repo -->
-                                                        {% set patient = patient_repo.get_by_id(appointment.patient_id) if appointment.patient_id else None %}
-                                                        {% if patient %}
-                                                            {{ patient.firstName }} {{ patient.lastName }}
-                                                        {% else %}
-                                                            Unknown Patient
-                                                        {% endif %}
+                                                        Unknown Patient
                                                     {% endif %}
-                                                    </div>
-                                                <div class="text-muted small">ID: #PAT{{ "%03d" % appointment.patient_id }}</div>
+                                                </div>
+                                                <div class="text-muted small">ID: #PAT{{ ("%03d" % appointment.patient_id) if appointment.patient_id else "N/A" }}</div>
                                             </div>
                                         </div>
                                     </td>
@@ -323,13 +358,7 @@
                                             {% if appointment.patient and appointment.patient.phone %}
                                                 {{ appointment.patient.phone }}
                                             {% else %}
-                                                {% set patient = patient_repo.get_by_id(appointment.patient_id) if appointment.patient_id else None %}
-                                                {{ patient.phone if patient else 'N/A' }}
-                                            {% endif %}
-                                        </div>
-                                        <div class="text-muted small">
-                                            {% if appointment.patient.email %}
-                                                {{ appointment.patient.email }}
+                                                N/A
                                             {% endif %}
                                         </div>
                                     </td>
@@ -354,17 +383,19 @@
                                     <td>
                                         <div class="btn-group btn-group-sm">
                                             {% if appointment.status == 'pending' %}
-                                            <button class="btn btn-outline-success" onclick="approveAppointment({{ appointment.id }})">
-                                                <i class="fas fa-check"></i> Approve
+                                            <button class="btn btn-outline-success btn-sm" onclick="approveAppointment({{ appointment.id }})">
+                                                <i class="fas fa-check"></i>
                                             </button>
-                                            <button class="btn btn-outline-danger" onclick="rejectAppointment({{ appointment.id }})">
-                                                <i class="fas fa-times"></i> Reject
+                                            <button class="btn btn-outline-danger btn-sm" onclick="rejectAppointment({{ appointment.id }})">
+                                                <i class="fas fa-times"></i>
                                             </button>
                                             {% endif %}
+                                            {% if appointment.patient_id %}
                                             <a href="{{ url_for('doctor.medical_file', pid=appointment.patient_id) }}" 
-                                               class="btn btn-outline-primary" title="View Patient File">
-                                                <i class="fas fa-file-medical"></i>
+                                               class="btn btn-outline-primary btn-sm" title="View Patient">
+                                                <i class="fas fa-user"></i>
                                             </a>
+                                            {% endif %}
                                         </div>
                                     </td>
                                 </tr>
@@ -431,85 +462,148 @@
     </div>
 </div>
 
-<script>
-    // Initialize current date
-    const today = new Date();
-    
-    // Weekly schedule functionality
-    function generateWeeklySchedule(startDate) {
-        const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-        const scheduleBody = document.getElementById('weeklyScheduleBody');
-        const timeSlots = [];
-        
-        // Generate time slots (9 AM to 5 PM, 30-minute intervals)
-        for (let hour = 9; hour < 17; hour++) {
-            for (let minute = 0; minute < 60; minute += 30) {
-                const time = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
-                timeSlots.push(time);
-            }
-        }
-        
-        // Generate table rows
-        scheduleBody.innerHTML = '';
-        timeSlots.forEach(time => {
-            const row = document.createElement('tr');
-            const timeCell = document.createElement('td');
-            timeCell.className = 'bg-light';
-            timeCell.innerHTML = `<strong>${time}</strong>`;
-            row.appendChild(timeCell);
-            
-            days.forEach((day, index) => {
-                const cell = document.createElement('td');
-                cell.className = 'schedule-cell text-center';
-                cell.setAttribute('data-day', index);
-                cell.setAttribute('data-time', time);
-                cell.innerHTML = '<small class="text-muted">Available</small>';
-                row.appendChild(cell);
-            });
-            
-            scheduleBody.appendChild(row);
-        });
-        
-        // Update date headers
-        days.forEach((day, index) => {
-            const date = new Date(startDate);
-            date.setDate(startDate.getDate() + index);
-            const dateElement = document.getElementById(`${day.toLowerCase()}Date`);
-            if (dateElement) {
-                dateElement.textContent = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-            }
-        });
-        
-        // Update week range display
-        const start = new Date(startDate);
-        const end = new Date(startDate);
-        end.setDate(start.getDate() + 5); // Monday to Saturday
-        document.getElementById('currentWeekRange').textContent = 
-            `${start.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${end.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
+<!-- View Appointment Details Modal -->
+<div class="modal fade" id="appointmentDetailsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title"><i class="fas fa-calendar-check me-2"></i>Appointment Details</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="appointmentDetailsContent">
+                <!-- Will be populated by JavaScript -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .schedule-cell {
+        cursor: pointer;
+        height: 60px;
+        vertical-align: middle;
+        transition: all 0.2s;
     }
     
-    // Initialize weekly schedule
-    let currentWeekStart = new Date(today);
-    // Find Monday of current week
-    currentWeekStart.setDate(today.getDate() - today.getDay() + 1);
-    generateWeeklySchedule(currentWeekStart);
+    .schedule-cell:hover {
+        background-color: #f8f9fa;
+        transform: scale(1.02);
+    }
     
-    // Week navigation
-    document.getElementById('prevWeek').addEventListener('click', function() {
-        currentWeekStart.setDate(currentWeekStart.getDate() - 7);
-        generateWeeklySchedule(new Date(currentWeekStart));
-    });
+    .appointment-slot {
+        cursor: pointer;
+        height: 50px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        text-align: center;
+    }
     
-    document.getElementById('nextWeek').addEventListener('click', function() {
-        currentWeekStart.setDate(currentWeekStart.getDate() + 7);
-        generateWeeklySchedule(new Date(currentWeekStart));
-    });
+    .available-slot {
+        cursor: pointer;
+        height: 50px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
     
-    // Form validation
+    .unavailable-slot {
+        height: 50px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        opacity: 0.7;
+    }
+    
+    .btn-group-sm .btn {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.875rem;
+    }
+    
+    table th {
+        font-weight: 600;
+    }
+</style>
+
+<script>
+    // Handle cell click in weekly schedule
+    function handleCellClick(cell) {
+        const date = cell.getAttribute('data-date');
+        const time = cell.getAttribute('data-time');
+        
+        // Get cell content
+        const content = cell.innerHTML.trim();
+        
+        if (content.includes('appointment-slot')) {
+            // Show appointment details
+            showAppointmentDetails(date, time);
+        } else if (content.includes('available-slot')) {
+            // Show option to book appointment
+            if (confirm(`Book appointment on ${date} at ${time}?`)) {
+                window.location.href = `{{ url_for('doctor.schedule') }}?book_date=${date}&book_time=${time}`;
+            }
+        } else if (content.includes('unavailable-slot')) {
+            alert(`Time slot ${time} on ${date} is not available.`);
+        } else {
+            // Empty slot - offer to add availability
+            if (confirm(`Add availability on ${date} at ${time}?`)) {
+                document.getElementById('availabilityDate').value = date;
+                document.getElementById('startTime').value = time;
+                
+                // Calculate end time (30 minutes later)
+                const [hours, minutes] = time.split(':');
+                let endHour = parseInt(hours);
+                let endMinute = parseInt(minutes) + 30;
+                
+                if (endMinute >= 60) {
+                    endHour += 1;
+                    endMinute -= 60;
+                }
+                
+                const endTime = `${endHour.toString().padStart(2, '0')}:${endMinute.toString().padStart(2, '0')}`;
+                document.getElementById('endTime').value = endTime;
+                
+                // Show the modal
+                const modal = new bootstrap.Modal(document.getElementById('addAvailabilityModal'));
+                modal.show();
+            }
+        }
+    }
+    
+    // Show appointment details
+    function showAppointmentDetails(date, time) {
+        // In a real app, you would fetch this data from the server
+        // For now, just show a message
+        const modalContent = `
+            <div class="text-center p-3">
+                <h5><i class="fas fa-calendar-check text-primary me-2"></i>Appointment Details</h5>
+                <p><strong>Date:</strong> ${date}</p>
+                <p><strong>Time:</strong> ${time}</p>
+                <p class="text-muted">Appointment details would be shown here.</p>
+                <p class="text-muted small">To view full details, check the "All Appointments" tab.</p>
+            </div>
+        `;
+        
+        document.getElementById('appointmentDetailsContent').innerHTML = modalContent;
+        const modal = new bootstrap.Modal(document.getElementById('appointmentDetailsModal'));
+        modal.show();
+    }
+    
+    // Form validation for add availability
     document.getElementById('addAvailabilityForm').addEventListener('submit', function(e) {
         const startTime = document.getElementById('startTime').value;
         const endTime = document.getElementById('endTime').value;
         const date = document.getElementById('availabilityDate').value;
+        
+        if (!startTime || !endTime || !date) {
+            e.preventDefault();
+            alert('Please fill all required fields.');
+            return false;
+        }
         
         if (startTime >= endTime) {
             e.preventDefault();
@@ -518,7 +612,10 @@
         }
         
         const selectedDate = new Date(date);
-        if (selectedDate < new Date(today.setHours(0, 0, 0, 0))) {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        if (selectedDate < today) {
             e.preventDefault();
             alert('Cannot add availability for past dates.');
             return false;
@@ -527,26 +624,17 @@
         return true;
     });
     
-    // Filter functions
-    function filterByDate() {
-        const date = document.getElementById('filterDate').value;
-        alert(`Filter by date: ${date} - This requires backend implementation.`);
-    }
-    
-    function filterByStatus(status) {
-        alert(`Filter by status: ${status} - This requires backend implementation.`);
-    }
-    
     // Appointment actions
     function approveAppointment(appointmentId) {
         if (confirm('Approve this appointment?')) {
-            fetch(`/appointment/${appointmentId}/approve`, {
+            fetch(`{{ url_for('doctor.approve_appointment', appointment_id=0) }}`.replace('0', appointmentId), {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded',
                 },
                 body: new URLSearchParams({
-                    'appointment_id': appointmentId
+                    'appointment_id': appointmentId,
+                    'csrf_token': '{{ session.get("csrf_token") }}'
                 })
             })
             .then(response => {
@@ -565,13 +653,14 @@
     
     function rejectAppointment(appointmentId) {
         if (confirm('Reject this appointment?')) {
-            fetch(`/appointment/${appointmentId}/reject`, {
+            fetch(`{{ url_for('doctor.reject_appointment', appointment_id=0) }}`.replace('0', appointmentId), {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded',
                 },
                 body: new URLSearchParams({
-                    'appointment_id': appointmentId
+                    'appointment_id': appointmentId,
+                    'csrf_token': '{{ session.get("csrf_token") }}'
                 })
             })
             .then(response => {
@@ -590,13 +679,14 @@
     
     function deleteAvailability(availabilityId) {
         if (confirm('Delete this availability slot?')) {
-            fetch(`/doctor/availability/${availabilityId}/delete`, {
+            fetch(`{{ url_for('doctor.delete_availability', av_id=0) }}`.replace('0', availabilityId), {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded',
                 },
                 body: new URLSearchParams({
-                    'availability_id': availabilityId
+                    'availability_id': availabilityId,
+                    'csrf_token': '{{ session.get("csrf_token") }}'
                 })
             })
             .then(response => {
@@ -619,6 +709,10 @@
         var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
             return new bootstrap.Tooltip(tooltipTriggerEl);
         });
+        
+        // Set minimum date for availability form
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('availabilityDate').min = today;
     });
 </script>
 

@@ -34,7 +34,7 @@ class PatientRepository(BaseRepository):
             
             print(f"DEBUG: Using phone: {phone_clean}")
             
-            cursor = self.db.cursor()
+            cursor = self.db.cursor(buffered=True)
             cursor.execute(
                 """
                 INSERT INTO patient (firstName, lastName, gender, phone, birth_date, address, user_id)
@@ -83,7 +83,7 @@ class PatientRepository(BaseRepository):
         """
         cursor = None
         try:
-            cursor = self.db.cursor(dictionary=True)
+            cursor = self.db.cursor(dictionary=True, buffered=True)
             
             search_pattern = f"%{search_term}%"
             
@@ -146,7 +146,7 @@ class PatientRepository(BaseRepository):
     def get_by_id(self, patient_id: int) -> Optional[Patient]:
         cursor = None
         try:
-            cursor = self.db.cursor(dictionary=True)
+            cursor = self.db.cursor(dictionary=True, buffered=True)
             cursor.execute(
                 """
                 SELECT id, firstName, lastName, gender, phone, birth_date, address, user_id, create_at AS created_at
@@ -177,7 +177,7 @@ class PatientRepository(BaseRepository):
     def get_by_user_id(self, user_id: int) -> Optional[Patient]:
         cursor = None
         try:
-            cursor = self.db.cursor(dictionary=True)
+            cursor = self.db.cursor(dictionary=True, buffered=True)
             cursor.execute(
                 """
                 SELECT id, firstName, lastName, gender, phone, birth_date, address, user_id, create_at AS created_at
@@ -204,13 +204,13 @@ class PatientRepository(BaseRepository):
             if cursor is not None:
                 cursor.close()
 
-    def update_patient(self, patient_id: int, first_name: str, last_name: str, phone: str, birth_date: str, address: str) -> bool:
+    def update_patient(self, patient_id: int, first_name: str, last_name: str, gender: str, phone: str, birth_date: str, address: str) -> bool:
         cursor = None
         try:
-            cursor = self.db.cursor()
+            cursor = self.db.cursor(buffered=True)
             cursor.execute(
-                "UPDATE patient SET firstName = %s, lastName = %s, phone = %s, birth_date = %s, address = %s WHERE id = %s",
-                (first_name, last_name, phone, birth_date, address, patient_id)
+                "UPDATE patient SET firstName = %s, lastName = %s, gender = %s, phone = %s, birth_date = %s, address = %s WHERE id = %s",
+                (first_name, last_name, gender, phone, birth_date, address, patient_id)
             )
             self.db.commit()
             cursor.close()
@@ -227,7 +227,7 @@ class PatientRepository(BaseRepository):
     def get_all_patients(self) -> List[Patient]:
         cursor = None
         try:
-            cursor = self.db.cursor(dictionary=True)
+            cursor = self.db.cursor(dictionary=True, buffered=True)
             cursor.execute(
                 """
                 SELECT 
@@ -275,7 +275,7 @@ class PatientRepository(BaseRepository):
         """
         cursor = None
         try:
-            cursor = self.db.cursor(dictionary=True)
+            cursor = self.db.cursor(dictionary=True, buffered=True)
             cursor.execute(
                 """
                 SELECT COUNT(*) as count 
@@ -307,7 +307,7 @@ class PatientRepository(BaseRepository):
         """
         cursor = None
         try:
-            cursor = self.db.cursor(dictionary=True)
+            cursor = self.db.cursor(dictionary=True, buffered=True)
             cursor.execute(
                 """
                 SELECT COUNT(*) as count 
@@ -339,7 +339,7 @@ class PatientRepository(BaseRepository):
         """
         cursor = None
         try:
-            cursor = self.db.cursor(dictionary=True)
+            cursor = self.db.cursor(dictionary=True, buffered=True)
             cursor.execute(
                 """
                 SELECT MAX(appointment_date) as last_visit

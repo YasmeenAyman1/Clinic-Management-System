@@ -9,6 +9,7 @@ from repositories.UploadedFileRepository import UploadedFileRepository
 from repositories.DoctorScheduleRepository import DoctorScheduleRepository
 from repositories.DoctorAvailabilityRepository import DoctorAvailabilityRepository
 from repositories.AdminAuditRepository import AdminAuditRepository
+from repositories.TaskRepository import TaskRepository
 
 class RepositoryFactory:
     @staticmethod
@@ -35,4 +36,6 @@ class RepositoryFactory:
             return DoctorAvailabilityRepository()
         if entity_type == "admin_audit":
             return AdminAuditRepository()
+        if entity_type == "task":
+             return TaskRepository()
         raise ValueError(f"Unknown repository type: {entity_type}")
