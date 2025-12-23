@@ -1,6 +1,6 @@
 from flask import Blueprint, flash, redirect, render_template, request, session, url_for, current_app
 import os
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from werkzeug.utils import secure_filename
 
 from repositories.repositories_factory import RepositoryFactory
@@ -32,6 +32,8 @@ def doctor_home():
         flash("Doctor profile not found.", category="warning")
         return redirect(url_for("auth.dashboard"))
     
+    session['doctor_name'] = f"{doctor.firstName} {doctor.lastName}"
+
     # Get today's appointments
     today = date.today().isoformat()
     appointments = appointment_repo.get_by_doctor_id(doctor.id, today)
@@ -42,63 +44,82 @@ def doctor_home():
 
 @doctor_bp.route('/appointment/<int:appointment_id>/approve', methods=['POST'])
 def approve_appointment(appointment_id):
-    if not session.get('user_id') or session.get('role') not in ['doctor', 'assistant']:
+    if not session.get('user_id') or session.get('role') != 'doctor':
         flash('Access denied.', category='danger')
         return redirect(url_for('auth.login'))
 
-    # Resolve acting doctor's id
-    if session.get('role') == 'doctor':
-        doctor = doctor_repo.get_by_user_id(session.get('user_id'))
-        doctor_id = doctor.id if doctor else None
-    else:
-        assistant = RepositoryFactory.get_repository('assistant').get_by_user_id(session.get('user_id'))
-        doctor_id = assistant.doctor_id if assistant else None
+    # Get the current doctor
+    doctor = doctor_repo.get_by_user_id(session.get('user_id'))
+    if not doctor:
+        flash('Doctor profile not found.', category='warning')
+        return redirect(url_for('auth.dashboard'))
 
-    if not doctor_id:
-        flash('Unable to resolve doctor for approval.', category='danger')
-        return redirect(url_for('doctor.doctor_home'))
-
-    success = appointment_repo.approve_appointment(appointment_id, doctor_id)
+    # Approve the appointment
+    success = appointment_repo.update_appointment_status(appointment_id, 'APPROVED', doctor.id)
+    
     if success:
-        # record audit of approval by current session user
+        flash('Appointment approved successfully!', category='success')
+        
+        # Optional: Send notification to patient
         try:
-            audit_repo.create_entry(session.get('user_id'), 'approve_appointment', target_user_id=appointment_id, target_type='appointment', details=f'doctor_id={doctor_id}')
+            appointment = appointment_repo.get_by_id(appointment_id)
+            if appointment and appointment.patient_id:
+                # You could add notification logic here
+                pass
         except Exception:
             pass
-        flash('Appointment approved.', category='success')
+            
     else:
         flash('Failed to approve appointment.', category='danger')
-    return redirect(url_for('doctor.doctor_home'))
+    
+    return redirect(url_for('doctor.schedule'))
 
 
 @doctor_bp.route('/appointment/<int:appointment_id>/reject', methods=['POST'])
 def reject_appointment(appointment_id):
-    if not session.get('user_id') or session.get('role') not in ['doctor', 'assistant']:
+    if not session.get('user_id') or session.get('role') != 'doctor':
         flash('Access denied.', category='danger')
         return redirect(url_for('auth.login'))
 
-    # Resolve acting doctor's id
-    if session.get('role') == 'doctor':
-        doctor = doctor_repo.get_by_user_id(session.get('user_id'))
-        doctor_id = doctor.id if doctor else None
-    else:
-        assistant = RepositoryFactory.get_repository('assistant').get_by_user_id(session.get('user_id'))
-        doctor_id = assistant.doctor_id if assistant else None
+    # Get the current doctor
+    doctor = doctor_repo.get_by_user_id(session.get('user_id'))
+    if not doctor:
+        flash('Doctor profile not found.', category='warning')
+        return redirect(url_for('auth.dashboard'))
 
-    if not doctor_id:
-        flash('Unable to resolve doctor for rejection.', category='danger')
-        return redirect(url_for('doctor.doctor_home'))
-
-    success = appointment_repo.reject_appointment(appointment_id, doctor_id)
+    # Reject the appointment
+    success = appointment_repo.update_appointment_status(appointment_id, 'REJECTED', doctor.id)
+    
     if success:
-        try:
-            audit_repo.create_entry(session.get('user_id'), 'reject_appointment', target_user_id=appointment_id, target_type='appointment', details=f'doctor_id={doctor_id}')
-        except Exception:
-            pass
         flash('Appointment rejected.', category='warning')
     else:
         flash('Failed to reject appointment.', category='danger')
-    return redirect(url_for('doctor.doctor_home'))
+    
+    return redirect(url_for('doctor.schedule'))
+
+
+@doctor_bp.route('/appointment/<int:appointment_id>/complete', methods=['POST'])
+def complete_appointment(appointment_id):
+    """Mark appointment as completed after consultation"""
+    if not session.get('user_id') or session.get('role') != 'doctor':
+        flash('Access denied.', category='danger')
+        return redirect(url_for('auth.login'))
+
+    # Get the current doctor
+    doctor = doctor_repo.get_by_user_id(session.get('user_id'))
+    if not doctor:
+        flash('Doctor profile not found.', category='warning')
+        return redirect(url_for('auth.dashboard'))
+
+    # Complete the appointment
+    success = appointment_repo.update_appointment_status(appointment_id, 'COMPLETED', doctor.id)
+    
+    if success:
+        flash('Appointment marked as completed.', category='success')
+    else:
+        flash('Failed to mark appointment as completed.', category='danger')
+    
+    return redirect(url_for('doctor.schedule'))
 
 @doctor_bp.route('/prescriptions')
 def prescriptions():
@@ -149,11 +170,39 @@ def medical_file(pid):
 
     records = medical_repo.get_records_by_patient(pid)
     diagnosis_list = []
+    
+    print(f"\n=== DEBUG: Processing patient {pid} medical records ===")
+    
     for r in records:
         doc = doctor_repo.get_by_id(r.doctor_id) if r.doctor_id else None
         files = uploaded_repo.get_files_by_record(r.id) if r.id else []
-        files_data = [{"filename": os.path.basename(f.file_path), 
-                      "file_path": f.file_path.replace('\\', '/')} for f in files]  # FIX HERE
+        
+        print(f"\nRecord ID: {r.id}")
+        print(f"  Number of files: {len(files)}")
+        
+        files_data = []
+        for f in files:
+            if f.file_path:
+                # Clean path for web
+                file_path = f.file_path.replace('\\', '/')
+                
+                # Get filename from the UploadedFile object
+                filename = f.filename if hasattr(f, 'filename') and f.filename else os.path.basename(file_path)
+                
+                # Check if file exists
+                full_path = os.path.join(current_app.static_folder, file_path)
+                file_exists = os.path.exists(full_path)
+                
+                print(f"  - File: {filename}")
+                print(f"    Path: {file_path}")
+                print(f"    Exists: {file_exists}")
+                
+                files_data.append({
+                    "filename": filename,
+                    "file_path": file_path,
+                    "exists": file_exists
+                })
+        
         diagnosis_list.append({
             "id": r.id,
             "date": r.upload_date,
@@ -164,10 +213,15 @@ def medical_file(pid):
             "files": files_data,
         })
 
+    print(f"\n=== DEBUG: Summary ===")
+    print(f"Total records: {len(diagnosis_list)}")
+    total_files = sum(len(d['files']) for d in diagnosis_list)
+    print(f"Total files: {total_files}")
+
     return render_template('doctor/medical_file.html', 
                          patient=patient, 
                          diagnosis=diagnosis_list,
-                         appointments=patient_appointments)  # Add this
+                         appointments=patient_appointments)
 
 @doctor_bp.route('/add_patient', methods=['POST'])
 def add_patient():
@@ -425,87 +479,176 @@ def delete_availability(av_id):
         flash('Failed to remove availability.', category='danger')
     return redirect(url_for('doctor.schedule'))
 
+from datetime import datetime, date, timedelta
+
 @doctor_bp.route('/schedule', methods=['GET'])
 def schedule():
     if not session.get("user_id") or session.get("role") != "doctor":
         flash("Access denied.", category="danger")
         return redirect(url_for("auth.login"))
-    
+
     doctor = doctor_repo.get_by_user_id(session.get('user_id'))
     if not doctor:
         flash('Doctor profile not found.', category='warning')
         return redirect(url_for('auth.dashboard'))
-    
-    # Get today's date
+
+    # -----------------------------
+    # Dates
+    # -----------------------------
     today = date.today()
-    today_str = today.isoformat()
-    
-    # Get doctor's availability
-    try:
-        availability = availability_repo.list_by_doctor(doctor.id)
-    except Exception:
-        availability = []
-    
-    # Get appointments with patient information
-    appointments = appointment_repo.get_by_doctor_id(doctor.id, None)  # Get all appointments
-    
-    # Enhance appointments with patient data
-    enhanced_appointments = []
-    for appointment in appointments:
-        # Get patient information
+
+    week_start = request.args.get('week_start')
+    filter_date = request.args.get('filter_date')
+    status_filter = request.args.get('status', 'all')
+
+    if week_start:
+        try:
+            week_start_date = datetime.strptime(week_start, '%Y-%m-%d').date()
+        except ValueError:
+            week_start_date = today
+    else:
+        week_start_date = today
+
+    week_end_date = week_start_date + timedelta(days=6)
+
+    if filter_date:
+        try:
+            filter_date = datetime.strptime(filter_date, '%Y-%m-%d').date()
+        except ValueError:
+            filter_date = None
+
+    # -----------------------------
+    # Week days
+    # -----------------------------
+    week_days = []
+    for i in range(6):
+        day_date = week_start_date + timedelta(days=i)
+        week_days.append({
+            'date': day_date.isoformat(),
+            'day_name': day_date.strftime('%A')
+        })
+
+    # -----------------------------
+    # Data
+    # -----------------------------
+    availability = availability_repo.list_by_doctor(doctor.id) or []
+    all_appointments = appointment_repo.get_by_doctor_id(doctor.id, None)
+
+    # -----------------------------
+    # Filter appointments
+    # -----------------------------
+    appointments = []
+    for appointment in all_appointments:
+        if status_filter != 'all' and appointment.status != status_filter:
+            continue
+        if filter_date and appointment.date != filter_date:
+            continue
+
         patient = patient_repo.get_by_id(appointment.patient_id) if appointment.patient_id else None
-        
-        # Create enhanced appointment dictionary
-        enhanced_appointment = {
+
+        appointments.append({
             'id': appointment.id,
             'date': appointment.date,
-            'appointment_time': appointment.appointment_time if hasattr(appointment, 'appointment_time') else None,
+            'time': getattr(appointment, 'appointment_time', None),
             'patient_id': appointment.patient_id,
             'patient': {
-                'firstName': patient.firstName if patient else 'Unknown',
-                'lastName': patient.lastName if patient else 'Patient',
-                'phone': patient.phone if patient else 'N/A',
-                'email': getattr(patient, 'email', 'N/A') if patient else 'N/A'
+                'firstName': patient.firstName,
+                'lastName': patient.lastName,
+                'phone': patient.phone
             } if patient else None,
             'type': getattr(appointment, 'type', 'regular'),
             'status': appointment.status
-        }
-        enhanced_appointments.append(enhanced_appointment)
-    
-    pending_appointments = appointment_repo.list_pending_by_doctor(doctor.id)
-    
-    # Get statistics
-    today_appointments = appointment_repo.get_by_doctor_id(doctor.id, today_str)
-    today_appointments_count = len(today_appointments) if today_appointments else 0
-    
-    # Get week's appointments (next 7 days)
-    from datetime import timedelta
-    week_end = today + timedelta(days=7)
-    
-    # Count week appointments
-    week_appointments_count = 0
-    for app in enhanced_appointments:
-        try:
-            app_date = datetime.strptime(str(app['date']), '%Y-%m-%d').date() if app['date'] else None
-            if app_date and today <= app_date <= week_end:
-                week_appointments_count += 1
-        except Exception:
-            continue
-    
-    # Count available slots
-    available_slots_count = len(availability) if availability else 0
-    pending_appointments_count = len(pending_appointments) if pending_appointments else 0
-    
-    return render_template('doctor/schedule.html',
-                         doctor=doctor,
-                         availability=availability,
-                         appointments=enhanced_appointments,  # Use enhanced appointments
-                         today=today_str,
-                         today_appointments_count=today_appointments_count,
-                         week_appointments_count=week_appointments_count,
-                         available_slots_count=available_slots_count,
-                         pending_appointments_count=pending_appointments_count)
+        })
 
+    # -----------------------------
+    # Statistics
+    # -----------------------------
+    today_appointments_count = sum(
+        1 for a in all_appointments if a.date == today
+    )
+
+    week_appointments_count = sum(
+        1 for a in all_appointments
+        if week_start_date <= a.date <= week_end_date
+    )
+
+    # -----------------------------
+    # Time slots
+    # -----------------------------
+    time_slots = []
+    for hour in range(9, 17):
+        for minute in (0, 30):
+            time_slots.append(f"{hour:02d}:{minute:02d}")
+
+    weekly_schedule = {}
+
+    # -----------------------------
+    # Availability
+    # -----------------------------
+    for slot in availability:
+        slot_date = slot.date
+        weekly_schedule.setdefault(slot_date, {})
+
+        # SAFE time parsing (HH:MM or HH:MM:SS)
+        try:
+            start_time = datetime.strptime(slot.start_time, "%H:%M:%S")
+        except ValueError:
+            start_time = datetime.strptime(slot.start_time, "%H:%M")
+
+        try:
+            end_time = datetime.strptime(slot.end_time, "%H:%M:%S")
+        except ValueError:
+            end_time = datetime.strptime(slot.end_time, "%H:%M")
+
+        current = start_time
+        while current < end_time:
+            time_str = current.strftime("%H:%M")
+            weekly_schedule[slot_date][time_str] = {
+                'type': 'available',
+                'slot_id': slot.id
+            }
+            current += timedelta(minutes=30)
+
+    # -----------------------------
+    # Appointments on schedule
+    # -----------------------------
+    for appointment in all_appointments:
+        app_date = appointment.date
+        weekly_schedule.setdefault(app_date, {})
+
+        app_time = getattr(appointment, 'appointment_time', None)
+        if app_time:
+            patient = patient_repo.get_by_id(appointment.patient_id) if appointment.patient_id else None
+            patient_name = f"{patient.firstName} {patient.lastName}" if patient else "Unknown"
+
+            weekly_schedule[app_date][app_time] = {
+                'type': 'appointment',
+                'appointment_id': appointment.id,
+                'patient_name': patient_name,
+                'status': appointment.status
+            }
+
+    pending_appointments_count = sum(
+        1 for a in all_appointments if a.status == 'pending'
+    )
+
+    return render_template(
+        'doctor/schedule.html',
+        doctor=doctor,
+        availability=availability,
+        appointments=appointments,
+        today=today.isoformat(),
+        week_start=week_start_date.isoformat(),
+        week_days=week_days,
+        time_slots=time_slots,
+        weekly_schedule=weekly_schedule,
+        filter_date=filter_date.isoformat() if filter_date else None,
+        status_filter=status_filter,
+        today_appointments_count=today_appointments_count,
+        week_appointments_count=week_appointments_count,
+        available_slots_count=len(availability),
+        pending_appointments_count=pending_appointments_count
+    )
 
 @doctor_bp.app_template_filter('get_day_name')
 def get_day_name(date_str):
@@ -569,7 +712,6 @@ def diagnose(pid):
         uploaded_by_user_id=session.get('user_id')
     )
 
-    # Handle file upload
     if record and 'file' in request.files:
         file = request.files['file']
         if file and file.filename:

@@ -1,15 +1,26 @@
-# Python
-__pycache__/
-*.pyc
-
-# Database
-src/database/*.db
-*.sqlite
-
+# Test and coverage
+.coverage
+htmlcov/
+.pytest_cache/
+.mypy_cache/
 
 # Environment
 .env
+venv/
+env/
+*.pyc
+__pycache__/
 
-# VS Code / IDE
+# IDE
 .vscode/
-s
+.idea/
+*.swp
+*.swo
+
+# Logs
+*.log
+logs/
+
+# Uploads
+uploads/
+static/uploads/

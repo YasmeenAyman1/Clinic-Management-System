@@ -7,5 +7,7 @@ class Assistant:
         self.user_id=user_id
         self.doctor_id=doctor_id
         self.created_at=created_at
-
-        
+        self.doctor_name = None
+        self.doctor_specialization = None
+        self.patient_name = None
+        self.patient_phone = None

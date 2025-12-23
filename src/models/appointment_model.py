@@ -9,3 +9,5 @@ class Appointment:
         self.follow_up_date = follow_up_date
         self.assistant_id = assistant_id
         self.created_at = created_at
+        self.doctor_name = None
+        self.doctor_specialization = None

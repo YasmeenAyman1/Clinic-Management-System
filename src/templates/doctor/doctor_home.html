@@ -7,10 +7,10 @@
     <div class="welcome-banner doctor-banner gradient-bg">
         <div class="welcome-text">
             <h1 class="welcome-title">
-                {% if session.get('user_name') %}
-                    Welcome, Dr. {{ session['user_name'].split(' ')[-1] }}!
+                {% if session.get('doctor_name') %}
+                    Welcome, Dr. {{ session['doctor_name'].split(' ')[-1] }} !
                 {% else %}
-                    Welcome, Doctor!
+                    Welcome, Doctor !
                 {% endif %}
             </h1>
             <p class="welcome-subtitle">Manage your appointments and patient care efficiently</p>
@@ -149,7 +149,7 @@
                         </div>
                     </a>
                     
-                    <a href="{{ url_for('doctor.search_patient') }}" class="action-card card-hover">
+                    <a href="{{ url_for('doctor.prescriptions') }}" class="action-card card-hover">
                         <div class="action-icon icon-bg-orange">
                             <i class="fas fa-prescription"></i>
                         </div>

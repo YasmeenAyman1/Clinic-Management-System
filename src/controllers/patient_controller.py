@@ -88,14 +88,26 @@ def appointments():
                 flash("Error checking availability. Please try again.", category="danger")
                 return redirect(url_for("patient.appointments"))
 
-            # Create appointment
-            appointment = appointment_repo.create_appointment(
-                patient_id=patient.id,
-                doctor_id=doctor_id,
-                date=date,
-                appointment_time=appointment_time,
-                status="PENDING"
-            )
+            # FIX: Add assistant_id parameter (try None first, then 0 if needed)
+            try:
+                appointment = appointment_repo.create_appointment(
+                    patient_id=patient.id,
+                    doctor_id=doctor_id,
+                    date=date,
+                    appointment_time=appointment_time,
+                    status="PENDING",
+                    assistant_id=None  # Try None first
+                )
+            except TypeError:
+                # If None doesn't work, try 0
+                appointment = appointment_repo.create_appointment(
+                    patient_id=patient.id,
+                    doctor_id=doctor_id,
+                    date=date,
+                    appointment_time=appointment_time,
+                    status="PENDING",
+                    assistant_id=0  # Try 0 if None fails
+                )
             
             if appointment:
                 flash("Appointment request submitted and is pending approval.", category="success")

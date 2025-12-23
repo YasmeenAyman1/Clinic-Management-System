@@ -1,0 +1,372 @@
+{% extends "base.html" %}
+
+{% block title %}{{ patient.firstName }} {{ patient.lastName }} - Patient File{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Patient Header -->
+    <div class="row mb-4">
+        <div class="col">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="d-flex align-items-center">
+                        <a href="{{ url_for('assistant.search_patient') }}" class="btn btn-outline-secondary me-3">
+                            <i class="fas fa-arrow-left"></i> Back to Search
+                        </a>
+                        <div>
+                            <h1 class="display-6 fw-bold text-dark mb-1">
+                                <i class="fas fa-user me-2" style="color: #6a5af9;"></i>
+                                {{ patient.firstName }} {{ patient.lastName }}
+                            </h1>
+                            <p class="text-muted mb-0">
+                                Patient ID: #{{ patient.id }} | 
+                                Phone: {{ patient.phone }}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addAppointmentModal">
+                        <i class="fas fa-calendar-plus me-2"></i>Schedule Appointment
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Patient Info Row -->
+    <div class="row g-4 mb-4">
+        <!-- Basic Information -->
+        <div class="col-md-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-info-circle me-2"></i>
+                        Basic Information
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="list-group list-group-flush">
+                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                            <span><strong>Patient ID:</strong></span>
+                            <span class="badge bg-primary">#{{ patient.id }}</span>
+                        </div>
+                        <div class="list-group-item d-flex justify-content-between">
+                            <span><strong>Name:</strong></span>
+                            <span>{{ patient.firstName }} {{ patient.lastName }}</span>
+                        </div>
+                        <div class="list-group-item d-flex justify-content-between">
+                            <span><strong>Phone:</strong></span>
+                            <span>{{ patient.phone }}</span>
+                        </div>
+                        {% if patient.email %}
+                        <div class="list-group-item d-flex justify-content-between">
+                            <span><strong>Email:</strong></span>
+                            <span>{{ patient.email }}</span>
+                        </div>
+                        {% endif %}
+                        {% if patient.birth_date %}
+                        <div class="list-group-item d-flex justify-content-between">
+                            <span><strong>Date of Birth:</strong></span>
+                            <span>{{ patient.birth_date }}</span>
+                        </div>
+                        {% endif %}
+                        {% if patient.gender %}
+                        <div class="list-group-item d-flex justify-content-between">
+                            <span><strong>Gender:</strong></span>
+                            <span>
+                                <span class="badge 
+                                    {% if patient.gender|lower == 'male' %}bg-info
+                                    {% elif patient.gender|lower == 'female' %}bg-pink
+                                    {% else %}bg-secondary{% endif %}">
+                                    {{ patient.gender|title }}
+                                </span>
+                            </span>
+                        </div>
+                        {% endif %}
+                        {% if patient.address %}
+                        <div class="list-group-item">
+                            <span><strong>Address:</strong></span>
+                            <p class="mb-0 mt-1">{{ patient.address }}</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Appointment History -->
+        <div class="col-md-8">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-info text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">
+                            <i class="fas fa-calendar-alt me-2"></i>
+                            Appointment History
+                        </h5>
+                        <button class="btn btn-sm btn-light" data-bs-toggle="modal" data-bs-target="#addAppointmentModal">
+                            <i class="fas fa-plus"></i> New Appointment
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if appointments %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Time</th>
+                                    <th>Doctor</th>
+                                    <th>Status</th>
+                                    <th>Notes</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for appt in appointments %}
+                                <tr>
+                                    <td>{{ appt.date }}</td>
+                                    <td>
+                                        {% if appt.appointment_time %}
+                                            {{ appt.appointment_time }}
+                                        {% else %}
+                                            <span class="text-muted">N/A</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if appt.doctor_name %}
+                                            {{ appt.doctor_name }}
+                                        {% else %}
+                                            <span class="text-muted">Not Assigned</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="badge 
+                                            {% if appt.status == 'BOOKED' %}bg-warning
+                                            {% elif appt.status == 'CONFIRMED' %}bg-info
+                                            {% elif appt.status == 'COMPLETED' %}bg-success
+                                            {% elif appt.status == 'CANCELLED' %}bg-danger
+                                            {% elif appt.status == 'PENDING' %}bg-secondary
+                                            {% else %}bg-secondary{% endif %}">
+                                            {{ appt.status }}
+                                        </span>
+                                    </td>
+                                  <td>
+                                        {% if appt.notes %}
+                                            <span class="notes-text" title="{{ appt.notes }}">
+                                                {{ appt.notes[:30] }}{% if appt.notes|length > 30 %}...{% endif %}
+                                            </span>
+                                        {% else %}
+                                            <span class="text-muted">No notes</span>
+                                        {% endif %}
+                                    </td>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            {% if appt.status in ['BOOKED', 'CONFIRMED', 'PENDING'] %}
+                                            <form method="POST" action="{{ url_for('assistant.cancel_appointment', appointment_id=appt.id) }}" 
+                                                  class="d-inline" onsubmit="return confirm('Cancel this appointment?')">
+                                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Cancel">
+                                                    <i class="fas fa-times"></i>
+                                                </button>
+                                            </form>
+                                            {% endif %}
+                                            {% if appt.status == 'BOOKED' %}
+                                            <form method="POST" action="{{ url_for('assistant.update_appointment_status', appointment_id=appt.id) }}" 
+                                                  class="d-inline" onsubmit="return confirm('Mark as confirmed?')">
+                                                <input type="hidden" name="status" value="CONFIRMED">
+                                                <button type="submit" class="btn btn-sm btn-outline-success" title="Confirm">
+                                                    <i class="fas fa-check"></i>
+                                                </button>
+                                            </form>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-calendar-times fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">No Appointment History</h5>
+                        <p class="text-muted">This patient has no appointment records.</p>
+                        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addAppointmentModal">
+                            <i class="fas fa-plus me-2"></i>Schedule First Appointment
+                        </button>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Appointment Modal -->
+<div class="modal fade" id="addAppointmentModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-calendar-plus me-2"></i>
+                    Schedule Appointment for {{ patient.firstName }}
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('assistant.add_appointment') }}">
+                <input type="hidden" name="patient_id" value="{{ patient.id }}">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="doctor_id" class="form-label">Doctor</label>
+                        <select class="form-select" id="doctor_id" name="doctor_id" required>
+                            <option value="">Select Doctor</option>
+                            {% for doctor in doctors %}
+                            <option value="{{ doctor.id }}">
+                                Dr. {{ doctor.firstName }} {{ doctor.lastName }} 
+                                {% if doctor.specialization %}({{ doctor.specialization }}){% endif %}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="appointment_date" class="form-label">Date</label>
+                            <input type="date" class="form-control" id="appointment_date" 
+                                   name="appointment_date" required min="{{ today }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="appointment_time" class="form-label">Time</label>
+                            <select class="form-select" id="appointment_time" name="appointment_time" required>
+                                <option value="">Select Doctor and Date First</option>
+                                <!-- Available slots will be loaded here by JavaScript -->
+                            </select>
+                            <small class="text-muted">Available times will appear after selecting doctor and date</small>
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <label for="notes" class="form-label">Notes (Optional)</label>
+                        <textarea class="form-control" id="notes" name="notes" rows="2" 
+                                  placeholder="Any special instructions or notes..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Schedule Appointment</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .notes-text {
+    cursor: help;
+    border-bottom: 1px dotted #666;
+}
+
+.notes-text:hover {
+    color: #007bff;
+}
+
+.bg-pink {
+    background-color: #e83e8c !important;
+    color: white;
+}
+
+.card {
+    border: none;
+    border-radius: 10px;
+}
+
+.card-header {
+    border-radius: 10px 10px 0 0 !important;
+}
+
+.list-group-item {
+    border: none;
+    border-bottom: 1px solid #eee;
+}
+
+.list-group-item:last-child {
+    border-bottom: none;
+}
+
+.badge {
+    font-weight: 500;
+}
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Simple time slot generation (without API)
+function generateTimeSlots(startHour = 9, endHour = 17, interval = 30) {
+    const slots = [];
+    
+    for (let hour = startHour; hour < endHour; hour++) {
+        for (let minute = 0; minute < 60; minute += interval) {
+            const time = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+            slots.push(time);
+        }
+    }
+    
+    return slots;
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const doctorSelect = document.getElementById('doctor_id');
+    const dateInput = document.getElementById('appointment_date');
+    const timeSelect = document.getElementById('appointment_time');
+    
+    // Set today's date as default
+    if (dateInput) {
+        const today = new Date().toISOString().split('T')[0];
+        dateInput.value = today;
+        dateInput.min = today;
+    }
+    
+    // When doctor or date changes, show available times
+    function updateTimeSlots() {
+        if (!doctorSelect || !dateInput || !timeSelect) return;
+        
+        const doctorId = doctorSelect.value;
+        const date = dateInput.value;
+        
+        if (!doctorId || !date) {
+            timeSelect.innerHTML = '<option value="">Select Doctor and Date First</option>';
+            return;
+        }
+        
+        // For now, just show standard time slots
+        // In a real app, you would fetch available slots from server
+        const slots = generateTimeSlots();
+        
+        timeSelect.innerHTML = '<option value="">Select Time</option>';
+        slots.forEach(slot => {
+            const option = document.createElement('option');
+            option.value = slot;
+            option.textContent = slot;
+            timeSelect.appendChild(option);
+        });
+        
+        console.log(`Showing ${slots.length} time slots for doctor ${doctorId} on ${date}`);
+    }
+    
+    // Add event listeners
+    if (doctorSelect) {
+        doctorSelect.addEventListener('change', updateTimeSlots);
+    }
+    
+    if (dateInput) {
+        dateInput.addEventListener('change', updateTimeSlots);
+    }
+    
+    // Initial update
+    updateTimeSlots();
+});
+</script>
+{% endblock %}
