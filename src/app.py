@@ -1,8 +1,9 @@
-# src/app.py - Simple runner file
+# src/app.py
+import os
 from create_app import create_app
 
-# Create the application instance for running
 app = create_app()
 
-if __name__ == "__main__":
-    app.run(debug=app.config['DEBUG'])
+if __name__ == '__main__':
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port, debug=True)
