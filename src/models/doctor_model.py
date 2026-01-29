@@ -1,5 +1,5 @@
 class Doctor:
-    def __init__(self,id,firstName,lastName,phone,schedule,user_id,specialization,created_at):
+    def __init__(self,id,firstName,lastName,phone,schedule,user_id,specialization,create_at):
         self.id=id
         self.firstName=firstName
         self.lastName=lastName
@@ -7,5 +7,5 @@ class Doctor:
         self.schedule=schedule
         self.user_id=user_id
         self.specialization=specialization
-        self.created_at=created_at
+        self.create_at=create_at
 

@@ -106,11 +106,9 @@
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">Gender</label>
-                                <select class="form-select" name="gender">
-                                    <option value="male">Male</option>
-                                    <option value="female">Female</option>
-                                    <option value="other" selected>Other</option>
-                                </select>
+                                <input type="text" class="form-control" name="gender"
+                                    value="{{ session.get('gender', '') }}"
+                                    placeholder="Male / Female / Other">
                             </div>
                         </div>
                         

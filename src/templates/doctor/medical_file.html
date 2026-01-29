@@ -48,7 +48,7 @@
             <h5 class="mb-0"><i class="fas fa-plus-circle me-2"></i>Add New Diagnosis</h5>
         </div>
         <div class="card-body">
-            <form method="post" action="{{ url_for('doctor.diagnose', pid=patient.id) }}" enctype="multipart/form-data">
+            <form method="post" action="{{ url_for('doctor.diagnose', pid=patient.id) }}" enctype="multipart/form-data" id="diagnosisForm">
                 <input type="hidden" name="csrf_token" value="{{ session.get('csrf_token') }}">
                 
                 <div class="row mb-3">
@@ -85,7 +85,7 @@
                     </div>
                     <div class="col-md-4">
                         <label for="file" class="form-label">Attach File</label>
-                        <input type="file" class="form-control" id="file" name="file" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx">
+                        <input type="file" class="form-control" id="file" name="file" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.txt">
                         <small class="text-muted">PDF, Images, or Documents (optional)</small>
                     </div>
                 </div>
@@ -97,7 +97,7 @@
                     </small>
                 </div>
                 
-                <button type="submit" class="btn btn-primary">
+                <button type="submit" class="btn btn-primary" id="submitBtn">
                     <i class="fas fa-save me-2"></i>Save Diagnosis
                 </button>
             </form>
@@ -126,37 +126,76 @@
                         </thead>
                         <tbody>
                             {% for d in diagnosis %}
-                            <tr>
+                            <tr id="diagnosis-row-{{ d.id }}">
                                 <td>{{ d.date }}</td>
                                 <td>{{ d.doctor_name }}</td>
                                 <td>
-                                    <div style="max-width: 250px; overflow: hidden; text-overflow: ellipsis;">
+                                    <div class="text-truncate" style="max-width: 250px;" 
+                                         title="{{ d.text }}">
                                         {{ d.text }}
                                     </div>
                                 </td>
                                 <td>
-                                    <div style="max-width: 250px; overflow: hidden; text-overflow: ellipsis;">
+                                    <div class="text-truncate" style="max-width: 250px;"
+                                         title="{{ d.treatment }}">
                                         {{ d.treatment }}
                                     </div>
                                 </td>
                                 <td>{{ d.followup if d.followup else '—' }}</td>
                                 <td>
-                                    {% if d.files %}
-                                        {% for file in d.files %}
-                                            <a href="/static/{{ file.file_path.replace('\\', '/') }}" 
-                                               target="_blank" class="badge bg-secondary me-1">
-                                                <i class="fas fa-paperclip"></i> {{ file.filename }}
-                                            </a>
-                                        {% endfor %}
+                                    {% if d.files and d.files|length > 0 %}
+                                        <div class="d-flex flex-wrap gap-1">
+                                            {% for file in d.files %}
+                                                {% if file.file_path %}
+                                                    {% set file_path = file.file_path.replace('\\', '/') %}
+                                                    {% set filename = file.filename if file.filename else file_path.split('/')[-1] %}
+                                                    {% set file_ext = filename.lower().split('.')[-1] if '.' in filename else '' %}
+                                                    
+                                                    {% if file_ext in ['pdf'] %}
+                                                        {% set icon = 'fa-file-pdf' %}
+                                                        {% set color = 'danger' %}
+                                                    {% elif file_ext in ['jpg', 'jpeg', 'png', 'gif', 'bmp'] %}
+                                                        {% set icon = 'fa-file-image' %}
+                                                        {% set color = 'success' %}
+                                                    {% elif file_ext in ['doc', 'docx'] %}
+                                                        {% set icon = 'fa-file-word' %}
+                                                        {% set color = 'primary' %}
+                                                    {% elif file_ext in ['txt'] %}
+                                                        {% set icon = 'fa-file-alt' %}
+                                                        {% set color = 'secondary' %}
+                                                    {% else %}
+                                                        {% set icon = 'fa-file' %}
+                                                        {% set color = 'info' %}
+                                                    {% endif %}
+                                                    
+                                                    <div class="btn-group btn-group-sm" role="group">
+                                                        <a href="{{ url_for('static', filename=file_path) }}" 
+                                                           target="_blank" 
+                                                           class="btn btn-sm btn-outline-{{ color }}"
+                                                           title="{{ filename }}"
+                                                           onclick="return testFileLink(this, event)">
+                                                            <i class="fas {{ icon }}"></i>
+                                                        </a>
+                                                        <a href="{{ url_for('static', filename=file_path) }}" 
+                                                           download="{{ filename }}"
+                                                           class="btn btn-sm btn-outline-success"
+                                                           title="Download {{ filename }}">
+                                                            <i class="fas fa-download"></i>
+                                                        </a>
+                                                    </div>
+                                                {% endif %}
+                                            {% endfor %}
+                                        </div>
                                     {% else %}
-                                        <span class="text-muted">None</span>
+                                        <span class="text-muted small">None</span>
                                     {% endif %}
                                 </td>
                                 <td>
                                     <div class="btn-group btn-group-sm">
-
-                                        <button class="btn btn-outline-info" disabled title="Edit/Delete coming soon">
-                                            <i class="fas fa-cog"></i>
+                                        <button class="btn btn-outline-info" 
+                                                onclick="viewFullDiagnosis({{ d.id }})"
+                                                title="View Details">
+                                            <i class="fas fa-eye"></i>
                                         </button>
                                     </div>
                                 </td>
@@ -182,6 +221,44 @@
     {% endif %}
 </div>
 
+<!-- View Full Diagnosis Modal -->
+<div class="modal fade" id="viewDiagnosisModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title"><i class="fas fa-file-medical me-2"></i>Diagnosis Details</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Diagnosis</h6>
+                        <div id="modal-diagnosis" class="border rounded p-3 mb-3 bg-light" style="min-height: 150px;"></div>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Treatment</h6>
+                        <div id="modal-treatment" class="border rounded p-3 mb-3 bg-light" style="min-height: 150px;"></div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-4">
+                        <p><strong>Date:</strong> <span id="modal-date"></span></p>
+                    </div>
+                    <div class="col-md-4">
+                        <p><strong>Doctor:</strong> <span id="modal-doctor"></span></p>
+                    </div>
+                    <div class="col-md-4">
+                        <p><strong>Follow-up:</strong> <span id="modal-followup"></span></p>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <style>
     .card {
         border: none;
@@ -201,11 +278,26 @@
         resize: vertical;
         min-height: 100px;
     }
+    
+    .text-truncate {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        cursor: help;
+    }
+    
+    .modal-content {
+        border-radius: 10px;
+    }
+    
+    .modal-header {
+        border-radius: 10px 10px 0 0;
+    }
 </style>
 
 <script>
-    // Set minimum date for follow-up to today
     document.addEventListener('DOMContentLoaded', function() {
+        // Set minimum date for follow-up to today
         const followupInput = document.getElementById('followup');
         if (followupInput) {
             const today = new Date().toISOString().split('T')[0];
@@ -217,6 +309,93 @@
         var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
             return new bootstrap.Tooltip(tooltipTriggerEl);
         });
+        
+        // Initialize popovers for truncated text
+        const truncatedElements = document.querySelectorAll('.text-truncate[title]');
+        truncatedElements.forEach(el => {
+            new bootstrap.Popover(el, {
+                trigger: 'hover',
+                placement: 'top',
+                content: el.getAttribute('title')
+            });
+        });
+        
+        // Form validation
+        const form = document.getElementById('diagnosisForm');
+        const submitBtn = document.getElementById('submitBtn');
+        
+        if (form) {
+            form.addEventListener('submit', function(e) {
+                const diagnosis = document.getElementById('diagnosis').value.trim();
+                const treatment = document.getElementById('treatment').value.trim();
+                
+                if (!diagnosis || !treatment) {
+                    e.preventDefault();
+                    alert('Please fill in both Diagnosis and Treatment fields.');
+                    return false;
+                }
+                
+                // Disable button to prevent double submission
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Saving...';
+                return true;
+            });
+        }
+        
+        // Debug: Log all file links
+        console.log('=== FILE LINKS DEBUG ===');
+        document.querySelectorAll('a[href*="static"]').forEach(link => {
+            console.log('File link:', link.href, 'Title:', link.title);
+        });
     });
+    
+    // Test file link before opening
+    function testFileLink(linkElement, event) {
+        event.preventDefault();
+        const url = linkElement.href;
+        const filename = linkElement.title;
+        
+        console.log('Testing file link:', url);
+        
+        // Open in new tab immediately
+        window.open(url, '_blank');
+        
+        // Check if file exists
+        fetch(url, { method: 'HEAD' })
+            .then(response => {
+                if (!response.ok) {
+                    console.warn('File might not exist:', url);
+                    // Try alternative path
+                    const altUrl = url.replace('/static/uploads/', '/static/');
+                    console.log('Trying alternative:', altUrl);
+                }
+            })
+            .catch(error => {
+                console.error('Error checking file:', error);
+            });
+        
+        return false;
+    }
+    
+    // View full diagnosis
+    function viewFullDiagnosis(diagnosisId) {
+        const row = document.getElementById(`diagnosis-row-${diagnosisId}`);
+        if (!row) return;
+        
+        const diagnosisText = row.cells[2].querySelector('.text-truncate').getAttribute('title');
+        const treatmentText = row.cells[3].querySelector('.text-truncate').getAttribute('title');
+        const date = row.cells[0].textContent;
+        const doctor = row.cells[1].textContent;
+        const followup = row.cells[4].textContent;
+        
+        document.getElementById('modal-diagnosis').textContent = diagnosisText;
+        document.getElementById('modal-treatment').textContent = treatmentText;
+        document.getElementById('modal-date').textContent = date;
+        document.getElementById('modal-doctor').textContent = doctor;
+        document.getElementById('modal-followup').textContent = followup === '—' ? 'None' : followup;
+        
+        const modal = new bootstrap.Modal(document.getElementById('viewDiagnosisModal'));
+        modal.show();
+    }
 </script>
 {% endblock %}

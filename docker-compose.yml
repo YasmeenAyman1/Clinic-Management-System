@@ -1,0 +1,21 @@
+# docker-compose.yml
+services:
+  app:
+    build: .
+    container_name: clinic-app
+    ports:
+      - "5000:5000"
+    environment:
+      DB_HOST: host.docker.internal  
+      DB_PORT: ${DB_PORT}                  # MySQL default port
+      DB_USER: ${DB_USER}                  # MySQL username
+      DB_PASSWORD: ${DB_PASSWORD}          # MySQL password
+      DB_NAME: clinic
+
+    volumes:
+      - ./src:/app/src
+    command: python src/app.py
+
+
+
+    

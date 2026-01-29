@@ -47,6 +47,7 @@
                             <th>Patient Name</th>
                             <th>Phone</th>
                             <th>Gender</th>
+                            <th>Date of Birth</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
@@ -55,16 +56,26 @@
                         <tr>
                             <td><strong>#{{ patient.id }}</strong></td>
                             <td>
-                                <strong>{{ patient.name }}</strong>
-                                {% if patient.birth_date %}
-                                <br><small class="text-muted">DOB: {{ patient.birth_date }}</small>
+                                <strong>{{ patient.firstName }} {{ patient.lastName }}</strong>
+                                {% if patient.age %}
+                                <br><small class="text-muted">Age: {{ patient.age }} years</small>
                                 {% endif %}
                             </td>
                             <td>{{ patient.phone }}</td>
                             <td>
-                                <span class="badge {% if patient.gender == 'Male' %}bg-info{% else %}bg-pink{% endif %}">
-                                    {{ patient.gender }}
+                                <span class="badge 
+                                    {% if patient.gender|lower == 'male' %}bg-info
+                                    {% elif patient.gender|lower == 'female' %}bg-pink
+                                    {% else %}bg-secondary{% endif %}">
+                                    {{ patient.gender|title if patient.gender else 'Not specified' }}
                                 </span>
+                            </td>
+                            <td>
+                                {% if patient.birth_date %}
+                                    {{ patient.birth_date }}
+                                {% else %}
+                                    <span class="text-muted">Not specified</span>
+                                {% endif %}
                             </td>
                             <td>
                                 <div class="btn-group" role="group">
@@ -72,12 +83,13 @@
                                        class="btn btn-sm btn-primary">
                                         <i class="fas fa-folder me-1"></i>View File
                                     </a>
-                                    {% if session.role == 'assistant' %}
+                                    {# Remove or comment out the edit button since you don't have the route #}
+                                    {# 
                                     <a href="{{ url_for('assistant.edit_patient', pid=patient.id) }}" 
                                        class="btn btn-sm btn-warning">
                                         <i class="fas fa-edit me-1"></i>Edit
                                     </a>
-                                    {% endif %}
+                                    #}
                                 </div>
                             </td>
                         </tr>
@@ -101,9 +113,4 @@
     {% endif %}
 </div>
 
-<style>
-.bg-pink {
-    background-color: #ff69b4 !important;
-}
-</style>
 {% endblock %}

@@ -1,0 +1,185 @@
+name: Python Tests
+
+on:
+  push:
+    branches: [main, master, develop]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      DB_HOST: 127.0.0.1
+      DB_PORT: 3306
+      DB_USER: root
+      DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+      DB_NAME: clinic_test
+      SECRET_KEY: ${{ secrets.SECRET_KEY }}
+      FLASK_ENV: testing
+      TESTING: 1
+      PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/src
+
+    # Use MySQL service for testing
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          MYSQL_DATABASE: clinic_test
+          MYSQL_ALLOW_EMPTY_PASSWORD: "no"
+          MYSQL_INITDB_SKIP_TZINFO: "1"
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=3
+
+    steps:
+      # 1. Checkout code
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 2. Set up Python
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+          cache: 'pip'  # Cache pip dependencies
+
+      # 3. Install system dependencies
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            default-libmysqlclient-dev \
+            build-essential \
+            pkg-config \
+            mysql-client  # Install mysql-client here instead of later
+
+      # 4. Install Python dependencies
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          # Install test dependencies
+          pip install pytest pytest-cov flake8
+
+      # 5. Wait for MySQL to be ready (improved)
+      - name: Wait for MySQL
+        run: |
+          echo "Waiting for MySQL to be ready..."
+          for i in {1..30}; do
+            # Use mysqladmin instead of mysql for simpler check
+            if mysqladmin ping -h 127.0.0.1 -P 3306 -uroot -p"$DB_PASSWORD" --silent; then
+              echo "✅ MySQL is ready!"
+              break
+            fi
+            echo "⏳ Waiting for MySQL... (attempt $i/30)"
+            sleep 2
+          done
+          
+          # Final check
+          if ! mysqladmin ping -h 127.0.0.1 -P 3306 -uroot -p"$DB_PASSWORD" --silent; then
+            echo "❌ MySQL failed to start"
+            exit 1
+          fi
+          
+          # Create test user if needed
+          mysql -h 127.0.0.1 -P 3306 -uroot -p"$DB_PASSWORD" -e "
+            CREATE DATABASE IF NOT EXISTS clinic_test;
+            SHOW DATABASES;
+          "
+
+      # 6. Set up test environment variables
+      - name: Set up test environment
+        run: |
+          # Fallback for SECRET_KEY if not provided as a secret
+          : "${SECRET_KEY:=github-actions-test-key-${GITHUB_RUN_ID}}"
+
+          # Create .env.test file for testing
+          cat > .env.test <<'EOF'
+          DB_HOST=$DB_HOST
+          DB_PORT=$DB_PORT
+          DB_USER=$DB_USER
+          DB_PASSWORD=$DB_PASSWORD
+          DB_NAME=$DB_NAME
+          SECRET_KEY=$SECRET_KEY
+          FLASK_ENV=$FLASK_ENV
+          TESTING=$TESTING
+          PYTHONPATH=$PYTHONPATH
+          EOF
+          
+          # Copy to .env for tests that might use it
+          cp .env.test .env
+
+      # 7. Run tests with proper environment
+      - name: Run tests with pytest
+        run: |
+          echo "Running tests..."
+          
+          # Debug: Show environment
+          echo "DB_HOST: $DB_HOST"
+          echo "DB_PORT: $DB_PORT"
+          echo "DB_NAME: $DB_NAME"
+          
+          # Run tests with coverage
+          python -m pytest tests/ \
+            -v \
+            --cov=src \
+            --cov-report=xml \
+            --cov-report=term-missing \
+            --junitxml=test-results.xml \
+            --tb=short
+          
+          # Check if tests directory exists
+          if [ ! -d "tests" ]; then
+            echo "⚠️ No tests directory found"
+            exit 0
+          fi
+
+      # 8. Upload test results (optional but useful)
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: |
+            test-results.xml
+            coverage.xml
+            .coverage
+
+      # 9. Run linting
+      - name: Run linting
+        run: |
+          # Check if src directory exists
+          if [ -d "src" ]; then
+            echo "Running flake8 on src/ directory..."
+            python -m flake8 src/ \
+              --count \
+              --select=E9,F63,F7,F82 \
+              --show-source \
+              --statistics \
+              --exit-zero || echo "Flake8 found issues"
+            
+            # Run general style check
+            python -m flake8 src/ \
+              --count \
+              --max-complexity=10 \
+              --max-line-length=127 \
+              --statistics \
+              --exit-zero
+          else
+            echo "⚠️ No src directory found for linting"
+          fi
+
+      # 10. Upload coverage to Codecov (optional)
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        if: success()
+        with:
+          file: ./coverage.xml
+          flags: unittests
+          name: codecov-umbrella

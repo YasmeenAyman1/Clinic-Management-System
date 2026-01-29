@@ -4,50 +4,46 @@ from repositories.BaseRepository import BaseRepository
 import datetime
 
 class AppointmentRepository(BaseRepository):
-    def create_appointment(
-        self,
-        patient_id: Optional[int] = None,
-        doctor_id: int = None,
-        date: str = None,
-        appointment_time: str = None,
-        assistant_id: Optional[int] = None,
-        status: str = "available"
-    ) -> Optional[Appointment]:
+    def create_appointment(self, patient_id: int, doctor_id: int, date: str, 
+                        appointment_time: str, assistant_id: int, 
+                        status: str = 'BOOKED', notes: Optional[str] = None):
         cursor = self.db.cursor(buffered=True)
         try:
-            # Optional: Check if slot already has non-cancelled appointment
+            # First check if slot is already taken
             cursor.execute(
                 """
                 SELECT id FROM appointment 
-                WHERE doctor_id = %s AND date = %s AND appointment_time = %s 
+                WHERE doctor_id = %s 
+                AND date = %s 
+                AND TIME(appointment_time) = TIME(%s)
                 AND status NOT IN ('CANCELLED', 'REJECTED')
                 """,
                 (doctor_id, date, appointment_time)
             )
+            existing = cursor.fetchone()
             
-            if cursor.fetchone():
-                print(f"Slot already booked: {doctor_id}, {date}, {appointment_time}")
-                cursor.close()
+            if existing:
+                # Slot is taken, return None
                 return None
             
+            # Create the appointment
             cursor.execute(
                 """
-                INSERT INTO appointment (patient_id, doctor_id, date, appointment_time, assistant_id, status)
-                VALUES (%s, %s, %s, %s, %s, %s)
+                INSERT INTO appointment 
+                (patient_id, doctor_id, date, appointment_time, assistant_id, status, notes)
+                VALUES (%s, %s, %s, %s, %s, %s, %s)
                 """,
-                (patient_id, doctor_id, date, appointment_time, assistant_id, status),
+                (patient_id, doctor_id, date, appointment_time, assistant_id, status, notes),
             )
             self.db.commit()
-            appointment_id = cursor.lastrowid
-            print(f"DEBUG: Appointment created with ID: {appointment_id}")
-            return self.get_by_id(appointment_id)
+            return self.get_by_id(cursor.lastrowid)
+            
         except Exception as e:
             self.db.rollback()
             print(f"Error creating appointment: {e}")
             return None
         finally:
             cursor.close()
-    
 
     def get_by_id(self, appointment_id: int) -> Optional[Appointment]:
         cursor = self.db.cursor(dictionary=True, buffered=True)
@@ -93,7 +89,7 @@ class AppointmentRepository(BaseRepository):
         finally:
             cursor.close()
 
-    def get_by_patient_id(self, patient_id: int) -> List[Appointment]:
+    def get_by_patient_id(self, patient_id: int):
         cursor = self.db.cursor(dictionary=True, buffered=True)
         try:
             cursor.execute(
@@ -108,11 +104,17 @@ class AppointmentRepository(BaseRepository):
                     a.follow_up_date,
                     a.assistant_id,
                     a.create_at AS created_at,
+                    a.notes,  -- ADD THIS
                     d.firstName as doctor_first_name,
                     d.lastName as doctor_last_name,
-                    d.specialization as doctor_specialization
+                    d.specialization as doctor_specialization,
+                    CONCAT(d.firstName, ' ', d.lastName) as doctor_name,  -- ADD THIS
+                    p.firstName as patient_first_name,  -- ADD PATIENT INFO
+                    p.lastName as patient_last_name,
+                    p.phone as patient_phone
                 FROM appointment a
                 LEFT JOIN doctor d ON a.doctor_id = d.id
+                LEFT JOIN patient p ON a.patient_id = p.id  -- JOIN PATIENT TABLE
                 WHERE a.patient_id = %s
                 ORDER BY a.date DESC, a.appointment_time DESC
                 """,
@@ -120,50 +122,26 @@ class AppointmentRepository(BaseRepository):
             )
             rows = cursor.fetchall()
             
-            appointments = []
+            # Convert date/time objects to strings
             for row in rows:
-                try:
-                    # Convert date/time objects to strings if needed
-                    if row.get('date') and hasattr(row['date'], 'strftime'):
-                        row['date'] = row['date'].strftime('%Y-%m-%d')
-                    
-                    if row.get('appointment_time') and hasattr(row['appointment_time'], 'strftime'):
-                        row['appointment_time'] = row['appointment_time'].strftime('%H:%M')
-                    
-                    # Create Appointment object with all required parameters
-                    appointment = Appointment(
-                        id=row['id'],
-                        patient_id=row['patient_id'],
-                        doctor_id=row['doctor_id'],
-                        date=row['date'],
-                        appointment_time=row['appointment_time'],
-                        status=row['status'],
-                        follow_up_date=row.get('follow_up_date'),
-                        assistant_id=row.get('assistant_id'),
-                        created_at=row.get('created_at')
-                    )
-                    
-                    # Add extra doctor info as attributes (optional)
-                    appointment.doctor_name = None
-                    appointment.doctor_specialization = None
-                    
-                    if row.get('doctor_first_name'):
-                        appointment.doctor_name = f"Dr. {row['doctor_first_name']} {row['doctor_last_name']}"
-                        appointment.doctor_specialization = row.get('doctor_specialization')
-                    
-                    appointments.append(appointment)
-                    
-                except Exception as e:
-                    print(f"Error creating Appointment from row: {e}")
-                    print(f"Row data: {row}")
-                    continue
+                if row.get('date') and hasattr(row['date'], 'strftime'):
+                    row['date'] = row['date'].strftime('%Y-%m-%d')
+                
+                if row.get('appointment_time') and hasattr(row['appointment_time'], 'strftime'):
+                    row['appointment_time'] = row['appointment_time'].strftime('%H:%M')
+                
+                # Create combined patient name
+                if row.get('patient_first_name') and row.get('patient_last_name'):
+                    row['patient_name'] = f"{row['patient_first_name']} {row['patient_last_name']}"
+                else:
+                    row['patient_name'] = None
             
             # DEBUG: Print all appointments
-            print(f"DEBUG get_by_patient_id: Found {len(appointments)} appointments for patient {patient_id}")
-            for i, appt in enumerate(appointments):
-                print(f"  Appointment {i+1}: ID={appt.id}, Date={appt.date}, Status='{appt.status}'")
+            print(f"DEBUG get_by_patient_id: Found {len(rows)} appointments for patient {patient_id}")
+            for i, row in enumerate(rows):
+                print(f"  Appointment {i+1}: ID={row['id']}, Date={row['date']}, Status='{row['status']}', Notes='{row.get('notes', 'NO NOTES')}'")
             
-            return appointments
+            return rows  # Return dictionaries, not Appointment objects
             
         except Exception as e:
             print(f"Error getting appointments by patient_id: {e}")
@@ -172,7 +150,7 @@ class AppointmentRepository(BaseRepository):
             return []
         finally:
             cursor.close()
-
+            
     def update_appointment_status(self, appointment_id: int, status: str) -> bool:
         cursor = self.db.cursor(buffered=True)
         try:
@@ -353,8 +331,19 @@ class AppointmentRepository(BaseRepository):
         for row in rows:
             try:
                 # Convert time objects to strings if needed
-                if row.get('appointment_time') and hasattr(row['appointment_time'], 'strftime'):
-                    row['appointment_time'] = row['appointment_time'].strftime('%H:%M')
+                if row.get('appointment_time'):
+                    # If it's a time/datetime object
+                    if hasattr(row['appointment_time'], 'strftime'):
+                        row['appointment_time'] = row['appointment_time'].strftime('%H:%M')
+                    # If MySQL returns TIME as datetime.timedelta
+                    elif isinstance(row['appointment_time'], datetime.timedelta):
+                        total_seconds = int(row['appointment_time'].total_seconds())
+                        hours = (total_seconds // 3600) % 24
+                        minutes = (total_seconds % 3600) // 60
+                        row['appointment_time'] = f"{hours:02d}:{minutes:02d}"
+                    # If it's a string with seconds (HH:MM:SS)
+                    elif isinstance(row['appointment_time'], str) and len(row['appointment_time']) >= 5:
+                        row['appointment_time'] = row['appointment_time'][:5]
                 
                 appointments.append(Appointment(**row))
             except Exception as e:
@@ -365,109 +354,89 @@ class AppointmentRepository(BaseRepository):
     def get_available_slots(self, doctor_id: int, date: str) -> List[str]:
         """Get available time slots for a doctor on a specific date."""
         try:
-            #print(f"\n🔍 DEBUG get_available_slots: doctor_id={doctor_id}, date={date}")
+            print(f"\n🔍 DEBUG get_available_slots: doctor_id={doctor_id}, date={date}")
             
             cursor = self.db.cursor(buffered=True)
             
-            # 1. Get availability
+            # 1. Get ALL availability entries for this date
             cursor.execute(
-                "SELECT start_time, end_time FROM doctor_availability WHERE doctor_id = %s AND date = %s",
+                "SELECT start_time, end_time FROM doctor_availability WHERE doctor_id = %s AND date = %s ORDER BY start_time",
                 (doctor_id, date),
             )
-            row = cursor.fetchone()
+            rows = cursor.fetchall()
             
-            if not row:
-                #print("❌ No availability found in database")
+            if not rows:
+                print("❌ No availability found in database")
                 cursor.close()
                 return []
             
-            start_time = row[0]
-            end_time = row[1]
-            #print(f"✅ Found availability: {start_time} to {end_time}")
-            #print(f"   Type start_time: {type(start_time)}, end_time: {type(end_time)}")
+            print(f"✅ Found {len(rows)} availability entries")
             
-            # 2. CONVERT to datetime.time objects (FIXED FOR TIMEDELTA)
-            from datetime import time, timedelta
-            
-            # Handle start_time
-            if isinstance(start_time, timedelta):
-                #print(f"   Converting timedelta to time: {start_time}")
-                # Convert timedelta to seconds
-                total_seconds = int(start_time.total_seconds())
-                hours = total_seconds // 3600
-                minutes = (total_seconds % 3600) // 60
-                seconds = total_seconds % 60
-                start_time_obj = time(hours, minutes, seconds)
-            elif isinstance(start_time, str):
-                #print(f"   Parsing start_time string: '{start_time}'")
-                # Remove microseconds if present
-                start_time = start_time.split('.')[0]
-                # Parse HH:MM:SS
-                if start_time.count(':') == 2:
-                    h, m, s = map(int, start_time.split(':'))
-                    start_time_obj = time(h, m, s)
+            # Combine all availability windows
+            all_slots = []
+            for row in rows:
+                start_time = row[0]
+                end_time = row[1]
+                
+                print(f"   Processing availability: {start_time} to {end_time}")
+                
+                # Convert times (same conversion logic as before)
+                from datetime import time, timedelta
+                
+                # Convert start_time
+                if isinstance(start_time, timedelta):
+                    total_seconds = int(start_time.total_seconds())
+                    hours = total_seconds // 3600
+                    minutes = (total_seconds % 3600) // 60
+                    start_time_obj = time(hours, minutes, 0)
+                elif isinstance(start_time, str):
+                    start_time = start_time.split('.')[0]
+                    if start_time.count(':') == 2:
+                        h, m, s = map(int, start_time.split(':'))
+                        start_time_obj = time(h, m, s)
+                    else:
+                        h, m = map(int, start_time.split(':'))
+                        start_time_obj = time(h, m, 0)
+                elif hasattr(start_time, 'hour'):
+                    start_time_obj = start_time
                 else:
-                    h, m = map(int, start_time.split(':'))
-                    start_time_obj = time(h, m, 0)
-            elif hasattr(start_time, 'hour'):
-                #print(f"   start_time is already time object")
-                start_time_obj = start_time
-            else:
-                #print(f"❌ Unknown start_time type: {type(start_time)}")
-                cursor.close()
-                return []
-            
-            # Handle end_time
-            if isinstance(end_time, timedelta):
-                #print(f"   Converting timedelta to time: {end_time}")
-                # Convert timedelta to seconds
-                total_seconds = int(end_time.total_seconds())
-                hours = total_seconds // 3600
-                minutes = (total_seconds % 3600) // 60
-                seconds = total_seconds % 60
-                end_time_obj = time(hours, minutes, seconds)
-            elif isinstance(end_time, str):
-                #print(f"   Parsing end_time string: '{end_time}'")
-                # Remove microseconds if present
-                end_time = end_time.split('.')[0]
-                # Parse HH:MM:SS
-                if end_time.count(':') == 2:
-                    h, m, s = map(int, end_time.split(':'))
-                    end_time_obj = time(h, m, s)
+                    continue
+                
+                # Convert end_time
+                if isinstance(end_time, timedelta):
+                    total_seconds = int(end_time.total_seconds())
+                    hours = total_seconds // 3600
+                    minutes = (total_seconds % 3600) // 60
+                    end_time_obj = time(hours, minutes, 0)
+                elif isinstance(end_time, str):
+                    end_time = end_time.split('.')[0]
+                    if end_time.count(':') == 2:
+                        h, m, s = map(int, end_time.split(':'))
+                        end_time_obj = time(h, m, s)
+                    else:
+                        h, m = map(int, end_time.split(':'))
+                        end_time_obj = time(h, m, 0)
+                elif hasattr(end_time, 'hour'):
+                    end_time_obj = end_time
                 else:
-                    h, m = map(int, end_time.split(':'))
-                    end_time_obj = time(h, m, 0)
-            elif hasattr(end_time, 'hour'):
-                #print(f"   end_time is already time object")
-                end_time_obj = end_time
-            else:
-                #print(f"❌ Unknown end_time type: {type(end_time)}")
-                cursor.close()
-                return []
+                    continue
+                
+                # Generate slots for this availability window
+                start_minutes = start_time_obj.hour * 60 + start_time_obj.minute
+                end_minutes = end_time_obj.hour * 60 + end_time_obj.minute
+                
+                current = start_minutes
+                while current < end_minutes:
+                    hour = current // 60
+                    minute = current % 60
+                    slot = f"{hour:02d}:{minute:02d}"
+                    if slot not in all_slots:  # Avoid duplicates
+                        all_slots.append(slot)
+                    current += 30
             
-            #print(f"✅ Converted: {start_time_obj} to {end_time_obj}")
+            print(f"✅ Generated {len(all_slots)} total slots from all availability windows")
             
-            # 3. Generate slots (SIMPLIFIED - NO DATETIME COMPLEXITY)
-            slots = []
-            
-            # Convert to minutes since midnight
-            start_minutes = start_time_obj.hour * 60 + start_time_obj.minute
-            end_minutes = end_time_obj.hour * 60 + end_time_obj.minute
-            
-            #print(f"   Start minutes: {start_minutes}, End minutes: {end_minutes}")
-            
-            # Generate every 30 minutes
-            current = start_minutes
-            while current < end_minutes:
-                hour = current // 60
-                minute = current % 60
-                slot = f"{hour:02d}:{minute:02d}"
-                slots.append(slot)
-                current += 30
-            
-            #print(f"✅ Generated {len(slots)} raw slots")
-            
-            # 4. Get booked appointments
+            # Get booked appointments
             cursor.execute(
                 """
                 SELECT appointment_time FROM appointment 
@@ -484,7 +453,6 @@ class AppointmentRepository(BaseRepository):
                     if hasattr(time_val, 'strftime'):
                         booked_time = time_val.strftime("%H:%M")
                     elif isinstance(time_val, timedelta):
-                        # Handle timedelta for booked times too
                         total_seconds = int(time_val.total_seconds())
                         hours = total_seconds // 3600
                         minutes = (total_seconds % 3600) // 60
@@ -497,25 +465,27 @@ class AppointmentRepository(BaseRepository):
                             booked_time = time_str
                     booked_times.append(booked_time)
             
-            #print(f"📅 Booked appointments: {booked_times}")
+            print(f"📅 Booked appointments: {booked_times}")
             
-            # 5. Filter out booked slots
+            # Filter out booked slots
             available_slots = []
-            for slot in slots:
+            for slot in all_slots:
                 if slot not in booked_times:
                     available_slots.append(slot)
             
-            #print(f"🎯 Final available slots ({len(available_slots)}): {available_slots}")
-            #print(f"🔚 END DEBUG\n")
+            print(f"🎯 Final available slots ({len(available_slots)}): {available_slots}")
+            print(f"🔚 END DEBUG\n")
             
             cursor.close()
             return available_slots
             
         except Exception as e:
-            #print(f"💥 ERROR in get_available_slots: {str(e)}")
+            print(f"💥 ERROR in get_available_slots: {str(e)}")
             import traceback
             traceback.print_exc()
             return []
+        
+#====================================Cancel Appointment============================================
     def cancel_appointment(self, appointment_id: int, patient_id: int) -> bool:
         cursor = self.db.cursor(buffered=True)
         try:
@@ -524,7 +494,8 @@ class AppointmentRepository(BaseRepository):
                 UPDATE appointment SET status = 'CANCELLED' 
                 WHERE id = %s AND patient_id = %s
                 """,
-                (appointment_id, patient_id)
+                (appointment_id,
+                 patient_id)
             )
             self.db.commit()
             affected_rows = cursor.rowcount
@@ -535,41 +506,65 @@ class AppointmentRepository(BaseRepository):
             print(f"Error cancelling appointment: {e}")
             cursor.close()
             return False
-    def get_pending_appointments(self, doctor_id: int):
-            """Get all pending appointments for a doctor"""
-            cursor = self.db.cursor(dictionary=True, buffered=True)
-            cursor.execute(
-                """
-                SELECT a.*, p.firstName, p.lastName, p.phone, p.email 
-                FROM appointment a
-                LEFT JOIN patient p ON a.patient_id = p.id
-                WHERE a.doctor_id = %s AND a.status = 'PENDING'
-                ORDER BY a.date, a.appointment_time ASC
-                """,
-                (doctor_id,)
-            )
-            appointments = cursor.fetchall()
-            cursor.close()
-            return appointments 
-    def approve_appointment(self, appointment_id: int, doctor_id: int) -> bool:
+        
+    def cancel_appointment_by_assistant(self, appointment_id: int, assistant_id: int) -> bool:
+        """Cancel appointment for assistant (checks assistant's doctor assignment)"""
         cursor = self.db.cursor(buffered=True)
         try:
+            # Get the appointment details first to check doctor_id
             cursor.execute(
                 """
-                UPDATE appointment SET status = 'BOOKED' 
-                WHERE id = %s AND doctor_id = %s AND status = 'PENDING'
+                SELECT a.doctor_id, a.status 
+                FROM appointment a
+                WHERE a.id = %s
                 """,
-                (appointment_id, doctor_id)
+                (appointment_id,)
+            )
+            appointment = cursor.fetchone()
+            
+            if not appointment:
+                print(f"DEBUG: Appointment {appointment_id} not found")
+                return False
+                
+            appt_doctor_id = appointment[0]
+            appt_status = appointment[1]
+            
+            # Check if assistant is assigned to this doctor
+            cursor.execute(
+                """
+                SELECT doctor_id 
+                FROM assistant 
+                WHERE id = %s AND doctor_id = %s
+                """,
+                (assistant_id, appt_doctor_id)
+            )
+            assistant_assigned = cursor.fetchone()
+            
+            if not assistant_assigned:
+                print(f"DEBUG: Assistant {assistant_id} not assigned to doctor {appt_doctor_id}")
+                return False
+            
+            # Cancel the appointment
+            cursor.execute(
+                """
+                UPDATE appointment SET status = 'CANCELLED' 
+                WHERE id = %s 
+                AND status IN ('BOOKED', 'CONFIRMED', 'PENDING', 'AVAILABLE')
+                """,
+                (appointment_id,)
             )
             self.db.commit()
             affected_rows = cursor.rowcount
-            cursor.close()
+            
+            print(f"DEBUG: Assistant {assistant_id} cancelled appointment {appointment_id}")
             return affected_rows > 0
+            
         except Exception as e:
             self.db.rollback()
-            print(f"Error approving appointment: {e}")
-            cursor.close()
+            print(f"Error cancelling appointment: {e}")
             return False
+        finally:
+            cursor.close()
 
     def reject_appointment(self, appointment_id: int, doctor_id: int) -> bool:
         cursor = self.db.cursor(buffered=True)
@@ -588,6 +583,43 @@ class AppointmentRepository(BaseRepository):
         except Exception as e:
             self.db.rollback()
             print(f"Error rejecting appointment: {e}")
+            cursor.close()
+            return False
+#=================================================================================================
+
+    def get_pending_appointments(self, doctor_id: int):
+        """Get all pending appointments for a doctor"""
+        cursor = self.db.cursor(dictionary=True, buffered=True)
+        cursor.execute(
+            """
+            SELECT a.*, p.firstName, p.lastName, p.phone, p.email 
+            FROM appointment a
+            LEFT JOIN patient p ON a.patient_id = p.id
+            WHERE a.doctor_id = %s AND a.status = 'PENDING'
+            ORDER BY a.date, a.appointment_time ASC
+            """,
+            (doctor_id,)
+        )
+        appointments = cursor.fetchall()
+        cursor.close()
+        return appointments 
+    def approve_appointment(self, appointment_id: int, doctor_id: int) -> bool:
+        cursor = self.db.cursor(buffered=True)
+        try:
+            cursor.execute(
+                """
+                UPDATE appointment SET status = 'BOOKED' 
+                WHERE id = %s AND doctor_id = %s AND status = 'PENDING'
+                """,
+                (appointment_id, doctor_id)
+            )
+            self.db.commit()
+            affected_rows = cursor.rowcount
+            cursor.close()
+            return affected_rows > 0
+        except Exception as e:
+            self.db.rollback()
+            print(f"Error approving appointment: {e}")
             cursor.close()
             return False
 
@@ -651,5 +683,84 @@ class AppointmentRepository(BaseRepository):
         except Exception as e:
             print(f"Error getting appointments by patient and doctor: {e}")
             return []
+        finally:
+            cursor.close()
+    def get_today_appointments(self, today_date):
+        cursor = self.db.cursor(dictionary=True, buffered=True)
+        try:
+            cursor.execute("""
+                SELECT a.*, 
+                    CONCAT(p.firstName, ' ', p.lastName) as patient_name,
+                    p.phone as patient_phone,
+                    CONCAT(d.firstName, ' ', d.lastName) as doctor_name
+                FROM appointment a
+                LEFT JOIN patient p ON a.patient_id = p.id
+                LEFT JOIN doctor d ON a.doctor_id = d.id
+                WHERE a.date = %s
+                ORDER BY a.appointment_time ASC
+            """, (today_date,))
+            rows = cursor.fetchall()
+            # Normalize time to HH:MM
+            for row in rows:
+                appt_time = row.get('appointment_time')
+                if appt_time:
+                    if hasattr(appt_time, 'strftime'):
+                        row['appointment_time'] = appt_time.strftime('%H:%M')
+                    elif isinstance(appt_time, datetime.timedelta):
+                        total_seconds = int(appt_time.total_seconds())
+                        hours = (total_seconds // 3600) % 24
+                        minutes = (total_seconds % 3600) // 60
+                        row['appointment_time'] = f"{hours:02d}:{minutes:02d}"
+                    elif isinstance(appt_time, str) and len(appt_time) >= 5:
+                        row['appointment_time'] = appt_time[:5]
+            return rows
+        finally:
+            cursor.close()
+
+    def get_appointments_by_date_range(self, doctor_id, start_date, end_date):
+        cursor = self.db.cursor(dictionary=True, buffered=True)
+        try:
+            cursor.execute("""
+                SELECT a.*, 
+                    CONCAT(p.firstName, ' ', p.lastName) as patient_name,
+                    p.phone as patient_phone
+                FROM appointment a
+                LEFT JOIN patient p ON a.patient_id = p.id
+                WHERE a.doctor_id = %s 
+                AND a.date BETWEEN %s AND %s
+                ORDER BY a.date, a.appointment_time ASC
+            """, (doctor_id, start_date, end_date))
+            rows = cursor.fetchall()
+            # Normalize time to HH:MM
+            for row in rows:
+                appt_time = row.get('appointment_time')
+                if appt_time:
+                    if hasattr(appt_time, 'strftime'):
+                        row['appointment_time'] = appt_time.strftime('%H:%M')
+                    elif isinstance(appt_time, datetime.timedelta):
+                        total_seconds = int(appt_time.total_seconds())
+                        hours = (total_seconds // 3600) % 24
+                        minutes = (total_seconds % 3600) // 60
+                        row['appointment_time'] = f"{hours:02d}:{minutes:02d}"
+                    elif isinstance(appt_time, str) and len(appt_time) >= 5:
+                        row['appointment_time'] = appt_time[:5]
+            return rows
+        finally:
+            cursor.close()
+
+    def update_appointment_status(self, appointment_id, status):
+        cursor = self.db.cursor(buffered=True)
+        try:
+            cursor.execute("""
+                UPDATE appointment 
+                SET status = %s 
+                WHERE id = %s
+            """, (status, appointment_id))
+            self.db.commit()
+            return cursor.rowcount > 0
+        except Exception as e:
+            self.db.rollback()
+            print(f"Error updating appointment status: {e}")
+            return False
         finally:
             cursor.close()
