@@ -331,8 +331,19 @@ class AppointmentRepository(BaseRepository):
         for row in rows:
             try:
                 # Convert time objects to strings if needed
-                if row.get('appointment_time') and hasattr(row['appointment_time'], 'strftime'):
-                    row['appointment_time'] = row['appointment_time'].strftime('%H:%M')
+                if row.get('appointment_time'):
+                    # If it's a time/datetime object
+                    if hasattr(row['appointment_time'], 'strftime'):
+                        row['appointment_time'] = row['appointment_time'].strftime('%H:%M')
+                    # If MySQL returns TIME as datetime.timedelta
+                    elif isinstance(row['appointment_time'], datetime.timedelta):
+                        total_seconds = int(row['appointment_time'].total_seconds())
+                        hours = (total_seconds // 3600) % 24
+                        minutes = (total_seconds % 3600) // 60
+                        row['appointment_time'] = f"{hours:02d}:{minutes:02d}"
+                    # If it's a string with seconds (HH:MM:SS)
+                    elif isinstance(row['appointment_time'], str) and len(row['appointment_time']) >= 5:
+                        row['appointment_time'] = row['appointment_time'][:5]
                 
                 appointments.append(Appointment(**row))
             except Exception as e:
@@ -688,7 +699,21 @@ class AppointmentRepository(BaseRepository):
                 WHERE a.date = %s
                 ORDER BY a.appointment_time ASC
             """, (today_date,))
-            return cursor.fetchall()
+            rows = cursor.fetchall()
+            # Normalize time to HH:MM
+            for row in rows:
+                appt_time = row.get('appointment_time')
+                if appt_time:
+                    if hasattr(appt_time, 'strftime'):
+                        row['appointment_time'] = appt_time.strftime('%H:%M')
+                    elif isinstance(appt_time, datetime.timedelta):
+                        total_seconds = int(appt_time.total_seconds())
+                        hours = (total_seconds // 3600) % 24
+                        minutes = (total_seconds % 3600) // 60
+                        row['appointment_time'] = f"{hours:02d}:{minutes:02d}"
+                    elif isinstance(appt_time, str) and len(appt_time) >= 5:
+                        row['appointment_time'] = appt_time[:5]
+            return rows
         finally:
             cursor.close()
 
@@ -705,7 +730,21 @@ class AppointmentRepository(BaseRepository):
                 AND a.date BETWEEN %s AND %s
                 ORDER BY a.date, a.appointment_time ASC
             """, (doctor_id, start_date, end_date))
-            return cursor.fetchall()
+            rows = cursor.fetchall()
+            # Normalize time to HH:MM
+            for row in rows:
+                appt_time = row.get('appointment_time')
+                if appt_time:
+                    if hasattr(appt_time, 'strftime'):
+                        row['appointment_time'] = appt_time.strftime('%H:%M')
+                    elif isinstance(appt_time, datetime.timedelta):
+                        total_seconds = int(appt_time.total_seconds())
+                        hours = (total_seconds // 3600) % 24
+                        minutes = (total_seconds % 3600) // 60
+                        row['appointment_time'] = f"{hours:02d}:{minutes:02d}"
+                    elif isinstance(appt_time, str) and len(appt_time) >= 5:
+                        row['appointment_time'] = appt_time[:5]
+            return rows
         finally:
             cursor.close()
 
