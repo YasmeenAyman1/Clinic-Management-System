@@ -143,13 +143,15 @@
                                     </td>
                                     <td>
                                         <span class="badge 
-                                            {% if appt.status == 'BOOKED' %}bg-warning
-                                            {% elif appt.status == 'CONFIRMED' %}bg-info
-                                            {% elif appt.status == 'COMPLETED' %}bg-success
-                                            {% elif appt.status == 'CANCELLED' %}bg-danger
-                                            {% elif appt.status == 'PENDING' %}bg-secondary
+                                            {% if appt.status|upper == 'PENDING' %}bg-warning text-dark
+                                            {% elif appt.status|upper == 'APPROVED' %}bg-primary
+                                            {% elif appt.status|upper == 'BOOKED' %}bg-primary
+                                            {% elif appt.status|upper == 'CONFIRMED' %}bg-info
+                                            {% elif appt.status|upper == 'COMPLETED' %}bg-secondary
+                                            {% elif appt.status|upper == 'CANCELLED' %}bg-danger
+                                            {% elif appt.status|upper == 'REJECTED' %}bg-danger
                                             {% else %}bg-secondary{% endif %}">
-                                            {{ appt.status }}
+                                            {{ appt.status|title }}
                                         </span>
                                     </td>
                                   <td>
@@ -164,20 +166,34 @@
                                     </td>
                                     <td>
                                         <div class="btn-group btn-group-sm">
-                                            {% if appt.status in ['BOOKED', 'CONFIRMED', 'PENDING'] %}
-                                            <form method="POST" action="{{ url_for('assistant.cancel_appointment', appointment_id=appt.id) }}" 
-                                                  class="d-inline" onsubmit="return confirm('Cancel this appointment?')">
-                                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Cancel">
+                                            {% if appt.status|upper == 'PENDING' %}
+                                            <form method="POST" action="{{ url_for('assistant.update_appointment_status', appointment_id=appt.id) }}" 
+                                                  class="d-inline" onsubmit="return confirm('Approve this appointment?')">
+                                                <input type="hidden" name="status" value="APPROVED">
+                                                <button type="submit" class="btn btn-sm btn-outline-success" title="Approve">
+                                                    <i class="fas fa-check"></i>
+                                                </button>
+                                            </form>
+                                            <form method="POST" action="{{ url_for('assistant.update_appointment_status', appointment_id=appt.id) }}" 
+                                                  class="d-inline" onsubmit="return confirm('Reject this appointment?')">
+                                                <input type="hidden" name="status" value="REJECTED">
+                                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Reject">
                                                     <i class="fas fa-times"></i>
                                                 </button>
                                             </form>
                                             {% endif %}
-                                            {% if appt.status == 'BOOKED' %}
+                                            {% if appt.status|upper in ['APPROVED', 'BOOKED', 'CONFIRMED'] %}
                                             <form method="POST" action="{{ url_for('assistant.update_appointment_status', appointment_id=appt.id) }}" 
-                                                  class="d-inline" onsubmit="return confirm('Mark as confirmed?')">
-                                                <input type="hidden" name="status" value="CONFIRMED">
-                                                <button type="submit" class="btn btn-sm btn-outline-success" title="Confirm">
-                                                    <i class="fas fa-check"></i>
+                                                  class="d-inline" onsubmit="return confirm('Mark as completed?')">
+                                                <input type="hidden" name="status" value="COMPLETED">
+                                                <button type="submit" class="btn btn-sm btn-outline-info" title="Complete">
+                                                    <i class="fas fa-check-double"></i>
+                                                </button>
+                                            </form>
+                                            <form method="POST" action="{{ url_for('assistant.cancel_appointment', appointment_id=appt.id) }}" 
+                                                  class="d-inline" onsubmit="return confirm('Cancel this appointment?')">
+                                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Cancel">
+                                                    <i class="fas fa-ban"></i>
                                                 </button>
                                             </form>
                                             {% endif %}

@@ -167,7 +167,11 @@
                                     </td>
                                     <td>
                                         {% if appt.appointment_time %}
-                                            {{ appt.appointment_time.strftime('%H:%M') }}
+                                            {% if appt.appointment_time is string %}
+                                                {{ appt.appointment_time[:5] }}
+                                            {% else %}
+                                                {{ appt.appointment_time.strftime('%H:%M') }}
+                                            {% endif %}
                                         {% else %}
                                             <span class="text-muted">N/A</span>
                                         {% endif %}
