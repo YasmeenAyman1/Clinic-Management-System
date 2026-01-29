@@ -41,21 +41,29 @@ def assistant_home():
         flash("Assistant profile not found.", category="warning")
         return redirect(url_for("auth.dashboard"))
     
-    # Get today's date
-    today = date.today().strftime("%Y-%m-%d")
+    # Get today's date and next 7 days
+    today = date.today()
+    today_str = today.strftime("%Y-%m-%d")
+    week_end = today + timedelta(days=7)
     
-    # Get today's appointments using repository
-    today_appointments = []
+    # Get upcoming appointments (next 7 days) using repository
+    upcoming_appointments = []
     try:
-        # Use the proper method to get appointments by doctor or assistant
+        # Get appointments for the assigned doctor
         if assistant.doctor_id:
-            today_appointments = appointment_repo.get_by_doctor_id(assistant.doctor_id, today)
+            # Get all appointments for this doctor, then filter by date range
+            all_appointments = appointment_repo.get_by_doctor_id(assistant.doctor_id)
+            upcoming_appointments = [
+                a for a in all_appointments 
+                if a.date and today_str <= str(a.date) <= week_end.strftime("%Y-%m-%d")
+            ]
         else:
-            today_appointments = appointment_repo.get_today_appointments(today)
+            upcoming_appointments = appointment_repo.get_today_appointments(today_str)
     except Exception as e:
         flash(f"Error loading appointments: {str(e)}", category="danger")
     
-    # Get appointment stats
+    # Get appointment stats (for today only)
+    today_appointments = [a for a in upcoming_appointments if str(a.date) == today_str]
     stats = {
         'total_appointments': len(today_appointments) if today_appointments else 0,
         'booked_appointments': len([a for a in (today_appointments or []) if getattr(a, 'status', '') in ['BOOKED', 'CONFIRMED', 'PENDING']]),
@@ -73,8 +81,8 @@ def assistant_home():
     return render_template(
         'assistant/assistant_home.html', 
         assistant=assistant, 
-        today_appointments=today_appointments,
-        today=today,
+        appointments=upcoming_appointments,
+        today=today_str,
         total_appointments=stats.get('total_appointments', 0),
         booked_appointments=stats.get('booked_appointments', 0),
         completed_appointments=stats.get('completed_appointments', 0),

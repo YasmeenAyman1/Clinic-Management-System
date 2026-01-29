@@ -36,8 +36,23 @@ def doctor_home():
 
     # Get today's appointments
     today = date.today().isoformat()
-    appointments = appointment_repo.get_by_doctor_id(doctor.id, today)
+    raw_appointments = appointment_repo.get_by_doctor_id(doctor.id, today)
     pending = appointment_repo.list_pending_by_doctor(doctor.id)
+    
+    # Transform appointments to include patient info for template
+    appointments = []
+    for apt in raw_appointments:
+        patient = patient_repo.get_by_id(apt.patient_id) if apt.patient_id else None
+        patient_name = f"{patient.firstName} {patient.lastName}" if patient else "Unknown"
+        
+        appointments.append({
+            'id': apt.id,
+            'patient_id': apt.patient_id,
+            'patient': patient_name,
+            'time': apt.appointment_time,
+            'status': apt.status,
+            'date': apt.date
+        })
     
     return render_template('doctor/doctor_home.html', doctor=doctor, appointments=appointments, pending=pending)
 
@@ -55,7 +70,7 @@ def approve_appointment(appointment_id):
         return redirect(url_for('auth.dashboard'))
 
     # Approve the appointment
-    success = appointment_repo.update_appointment_status(appointment_id, 'APPROVED', doctor.id)
+    success = appointment_repo.update_appointment_status(appointment_id, 'APPROVED')
     
     if success:
         flash('Appointment approved successfully!', category='success')
@@ -88,12 +103,36 @@ def reject_appointment(appointment_id):
         return redirect(url_for('auth.dashboard'))
 
     # Reject the appointment
-    success = appointment_repo.update_appointment_status(appointment_id, 'REJECTED', doctor.id)
+    success = appointment_repo.update_appointment_status(appointment_id, 'REJECTED')
     
     if success:
         flash('Appointment rejected.', category='warning')
     else:
         flash('Failed to reject appointment.', category='danger')
+    
+    return redirect(url_for('doctor.schedule'))
+
+
+@doctor_bp.route('/appointment/<int:appointment_id>/cancel', methods=['POST'])
+def cancel_appointment(appointment_id):
+    """Cancel an approved/booked appointment"""
+    if not session.get('user_id') or session.get('role') != 'doctor':
+        flash('Access denied.', category='danger')
+        return redirect(url_for('auth.login'))
+
+    # Get the current doctor
+    doctor = doctor_repo.get_by_user_id(session.get('user_id'))
+    if not doctor:
+        flash('Doctor profile not found.', category='warning')
+        return redirect(url_for('auth.dashboard'))
+
+    # Cancel the appointment
+    success = appointment_repo.update_appointment_status(appointment_id, 'CANCELLED')
+    
+    if success:
+        flash('Appointment cancelled.', category='warning')
+    else:
+        flash('Failed to cancel appointment.', category='danger')
     
     return redirect(url_for('doctor.schedule'))
 
@@ -112,7 +151,7 @@ def complete_appointment(appointment_id):
         return redirect(url_for('auth.dashboard'))
 
     # Complete the appointment
-    success = appointment_repo.update_appointment_status(appointment_id, 'COMPLETED', doctor.id)
+    success = appointment_repo.update_appointment_status(appointment_id, 'COMPLETED')
     
     if success:
         flash('Appointment marked as completed.', category='success')
@@ -539,7 +578,8 @@ def schedule():
     # -----------------------------
     appointments = []
     for appointment in all_appointments:
-        if status_filter != 'all' and appointment.status != status_filter:
+        # Case-insensitive status filter
+        if status_filter != 'all' and appointment.status and appointment.status.lower() != status_filter.lower():
             continue
         if filter_date and appointment.date != filter_date:
             continue
@@ -586,7 +626,8 @@ def schedule():
     # Availability
     # -----------------------------
     for slot in availability:
-        slot_date = slot.date
+        # Convert date to ISO string format to match week_days keys
+        slot_date = slot.date.isoformat() if hasattr(slot.date, 'isoformat') else str(slot.date)
         weekly_schedule.setdefault(slot_date, {})
 
         # SAFE time parsing (HH:MM or HH:MM:SS)
@@ -610,14 +651,26 @@ def schedule():
             current += timedelta(minutes=30)
 
     # -----------------------------
-    # Appointments on schedule
+    # Appointments on schedule (exclude cancelled/rejected - they should show as available)
     # -----------------------------
     for appointment in all_appointments:
-        app_date = appointment.date
+        # Skip cancelled/rejected appointments - slot should be available again
+        if appointment.status and appointment.status.upper() in ['CANCELLED', 'REJECTED']:
+            continue
+        
+        # Convert date to ISO string format to match week_days keys
+        app_date = appointment.date.isoformat() if hasattr(appointment.date, 'isoformat') else str(appointment.date)
         weekly_schedule.setdefault(app_date, {})
 
         app_time = getattr(appointment, 'appointment_time', None)
         if app_time:
+            # Ensure time is in HH:MM format to match time_slots
+            if hasattr(app_time, 'strftime'):
+                app_time = app_time.strftime('%H:%M')
+            elif isinstance(app_time, str) and len(app_time) > 5:
+                # Trim seconds if present (HH:MM:SS -> HH:MM)
+                app_time = app_time[:5]
+            
             patient = patient_repo.get_by_id(appointment.patient_id) if appointment.patient_id else None
             patient_name = f"{patient.firstName} {patient.lastName}" if patient else "Unknown"
 
@@ -629,7 +682,7 @@ def schedule():
             }
 
     pending_appointments_count = sum(
-        1 for a in all_appointments if a.status == 'pending'
+        1 for a in all_appointments if a.status and a.status.upper() == 'PENDING'
     )
 
     return render_template(
