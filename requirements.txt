@@ -7,3 +7,4 @@ Werkzeug==3.1.4
 click==8.1.7
 SQLAlchemy==2.0.44
 greenlet==3.3.0
+requests==2.31.0

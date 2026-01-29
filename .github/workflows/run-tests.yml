@@ -18,7 +18,7 @@ jobs:
       SECRET_KEY: ${{ secrets.SECRET_KEY }}
       FLASK_ENV: testing
       TESTING: 1
-      PYTHONPATH: src
+      PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/src
 
     # Use MySQL service for testing
     services:
