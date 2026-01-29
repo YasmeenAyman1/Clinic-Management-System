@@ -1,11 +1,12 @@
 import pytest
-from src.app import create_app
-from src.models.User_model import User
+from create_app import create_app
+from models.user_model import User
 import json
+
 
 @pytest.fixture
 def client():
-    app = create_app()
+    app = create_app('testing')
     app.config['TESTING'] = True
     app.config['SECRET_KEY'] = 'test-secret-key'
     app.config['WTF_CSRF_ENABLED'] = False

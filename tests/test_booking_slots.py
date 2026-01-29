@@ -1,5 +1,5 @@
 import datetime
-from repositories.mainRepository import AppointmentRepository
+from repositories.AppointmentRepository import AppointmentRepository
 
 
 class FakeCursor:

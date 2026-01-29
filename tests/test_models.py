@@ -1,64 +1,72 @@
 import pytest
 from datetime import datetime
-from src.models.User_model import User
-from src.models.Patient_model import Patient
-from src.models.Doctor_model import Doctor
-from src.models.Appointment_model import Appointment
+from models.user_model import User
+from models.patient_model import Patient
+from models.doctor_model import Doctor
+from models.appointment_model import Appointment
+
 
 def test_user_model():
     """Test User model creation"""
+    now = datetime.now()
     user = User(
         id=1,
         username='testuser',
-        email='test@example.com',
-        password_hash='hashed_password',
+        password='hashed_password',
         role='patient',
-        is_active=True
+        status='active',
+        updated_at=now,
+        created_at=now
     )
     
     assert user.id == 1
     assert user.username == 'testuser'
-    assert user.email == 'test@example.com'
+    assert user.password == 'hashed_password'
     assert user.role == 'patient'
-    assert user.is_active == True
-    assert user.check_password('hashed_password') is False  # This is hashed, not plain
+    assert user.status == 'active'
+
 
 def test_patient_model():
     """Test Patient model creation"""
+    now = datetime.now()
     patient = Patient(
         id=1,
         firstName='John',
         lastName='Doe',
         gender='Male',
-        phone='+1234567890',
         birth_date='1990-01-01',
+        phone='+1234567890',
         address='123 Main St',
-        user_id=1
+        user_id=1,
+        created_at=now
     )
     
     assert patient.id == 1
     assert patient.firstName == 'John'
     assert patient.lastName == 'Doe'
-    assert patient.full_name == 'John Doe'
     assert patient.gender == 'Male'
     assert patient.phone == '+1234567890'
 
+
 def test_doctor_model():
     """Test Doctor model creation"""
+    now = datetime.now()
     doctor = Doctor(
         id=1,
         firstName='Jane',
         lastName='Smith',
-        specialization='Cardiology',
         phone='+0987654321',
-        user_id=2
+        schedule='Mon-Fri 9-5',
+        user_id=2,
+        specialization='Cardiology',
+        create_at=now
     )
     
     assert doctor.id == 1
     assert doctor.firstName == 'Jane'
     assert doctor.lastName == 'Smith'
-    assert doctor.full_name == 'Jane Smith'
     assert doctor.specialization == 'Cardiology'
+
 
 def test_appointment_model():
     """Test Appointment model creation"""
